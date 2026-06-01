@@ -3,7 +3,7 @@
 "menu.stop_recording" = "録音停止";
 "menu.shortcut_hint %@" = "%@ で録音を切り替え";
 "menu.settings" = "設定...";
-"menu.quit" = "OpenVoiceText を終了";
+"menu.quit %@" = "%@ を終了";
 
 /* Permissions */
 "permission.speech" = "音声認識の権限が必要です。";
@@ -119,7 +119,9 @@
 /* About */
 "about.version %@ %@" = "バージョン %1$@ (%2$@)";
 "about.tagline" = "macOS 向けコンテキスト対応音声入力";
+"about.tagline_pro" = "macOS 向け AI 音声入力";
 "about.links" = "リンク";
+"about.website" = "ウェブサイト";
 "about.github" = "GitHub リポジトリ";
 "about.bug_report" = "バグを報告";
 "about.x_account" = "@tanakaisworking（X）";
@@ -129,7 +131,7 @@
 "about.privacy" = "すべてローカルで処理。音声やテキストが Mac の外に出ることはありません。";
 
 /* Pro */
-"pro.title" = "OpenVoiceText Pro";
+"pro.title" = "Koeri Pro";
 "pro.unlocked" = "アンロック済み";
 "pro.upgrade_prompt" = "AI 整形と翻訳をアンロック";
 "pro.features" = "Pro 機能";

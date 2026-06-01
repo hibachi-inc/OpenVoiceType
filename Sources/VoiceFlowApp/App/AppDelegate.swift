@@ -15,6 +15,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var translateHotkeys: [GlobalHotkey] = []
     #endif
     private let prefs = PreferencesStore.shared
+    private let appName: String = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
+        ?? Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "OpenVoiceText"
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         coordinator.setup()
@@ -30,7 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem.button?.image = NSImage(
-            systemSymbolName: "mic.fill", accessibilityDescription: "OpenVoiceText"
+            systemSymbolName: "mic.fill", accessibilityDescription: appName
         )
         let menu = NSMenu()
         menu.delegate = self
@@ -61,7 +63,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(settings)
 
         menu.addItem(.separator())
-        let quit = NSMenuItem(title: String(localized: "menu.quit"), action: #selector(terminateApp), keyEquivalent: "q")
+        let quit = NSMenuItem(title: String(localized: "menu.quit \(appName)"), action: #selector(terminateApp), keyEquivalent: "q")
         quit.target = self
         menu.addItem(quit)
     }
@@ -144,7 +146,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func updateStatusIcon() {
         let name = coordinator.isRecording ? "mic.fill.badge.plus" : "mic.fill"
         statusItem.button?.image = NSImage(
-            systemSymbolName: name, accessibilityDescription: "OpenVoiceText"
+            systemSymbolName: name, accessibilityDescription: appName
         )
         rebuildMenu()
     }
