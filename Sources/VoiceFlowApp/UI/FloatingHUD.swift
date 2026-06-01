@@ -8,6 +8,7 @@ final class FloatingHUD: HUDProtocol {
     private var status: HUDStatus = .listening
     private var transcript = ""
     private var audioLevel: Float = 0
+    private var engineLabel = ""
     private var autoHideTask: Task<Void, Never>?
     private var lastAudioLevelUpdate: ContinuousClock.Instant = .now
     var onTap: (() -> Void)?
@@ -57,6 +58,13 @@ final class FloatingHUD: HUDProtocol {
 
     func updateTranscript(_ text: String) {
         transcript = text
+        updateContent()
+    }
+
+    func updateEngine(_ engine: String) {
+        engineLabel = engine == "enhanced"
+            ? String(localized: "engine.enhanced_short")
+            : String(localized: "engine.classic_short")
         updateContent()
     }
 
@@ -153,6 +161,7 @@ final class FloatingHUD: HUDProtocol {
             transcript: transcript,
             audioLevel: audioLevel,
             shortcutLabel: shortcutLabel,
+            engineLabel: engineLabel,
             onTap: { [weak self] in self?.onTap?() }
         )
     }
@@ -168,10 +177,12 @@ final class FloatingHUD: HUDProtocol {
     }
 
     private func calculateWidth() -> CGFloat {
-        let baseWidth: CGFloat = 260
         let maxWidth: CGFloat = 500
-        let charCount = transcript.suffix(60).count
-        let textWidth = CGFloat(min(charCount, 20)) * 8
-        return min(maxWidth, baseWidth + textWidth)
+        if transcript.isEmpty {
+            return 180
+        }
+        let charCount = transcript.suffix(80).count
+        let textWidth = CGFloat(min(charCount, 30)) * 8
+        return min(maxWidth, 180 + textWidth)
     }
 }

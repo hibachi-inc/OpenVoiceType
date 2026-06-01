@@ -5,6 +5,7 @@ struct FloatingHUDView: View {
     let transcript: String
     let audioLevel: Float
     var shortcutLabel: String = "⌥Space"
+    var engineLabel: String = ""
     var onTap: (() -> Void)? = nil
 
     private var displayTranscript: String {
@@ -17,14 +18,27 @@ struct FloatingHUDView: View {
                 statusIndicator
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(status.title)
-                        .font(DS.Font.hudStatus)
-                        .foregroundStyle(.white.opacity(0.7))
-                    Text(displayTranscript.isEmpty ? " " : displayTranscript)
-                        .font(DS.Font.hudTranscript)
-                        .foregroundStyle(displayTranscript.isEmpty ? .clear : .white)
-                        .lineLimit(1)
-                        .truncationMode(.head)
+                    HStack(spacing: 4) {
+                        Text(status.title)
+                            .font(DS.Font.hudStatus)
+                            .foregroundStyle(.white.opacity(0.7))
+                        if status == .listening, !engineLabel.isEmpty {
+                            Text(engineLabel)
+                                .font(.system(size: 9, weight: .medium))
+                                .foregroundStyle(.white.opacity(0.5))
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 1)
+                                .background(.white.opacity(0.1))
+                                .clipShape(Capsule())
+                        }
+                    }
+                    if !displayTranscript.isEmpty {
+                        Text(displayTranscript)
+                            .font(DS.Font.hudTranscript)
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                            .truncationMode(.head)
+                    }
                 }
             }
 
@@ -36,7 +50,7 @@ struct FloatingHUDView: View {
                     }
                     HStack {
                         Spacer()
-                        Text("\(shortcutLabel) stop")
+                        Text("hud.stop \(shortcutLabel)")
                             .font(.system(size: 9, weight: .medium))
                             .foregroundStyle(.white.opacity(0.3))
                     }
@@ -132,10 +146,10 @@ enum HUDStatus: Equatable {
 
     var title: String {
         switch self {
-        case .listening: "Listening..."
-        case .processing: "Refining..."
-        case .copied: "Copied — ⌘V to paste"
-        case .inserted: "Inserted"
+        case .listening: String(localized: "hud.listening")
+        case .processing: String(localized: "hud.processing")
+        case .copied: String(localized: "hud.copied")
+        case .inserted: String(localized: "hud.inserted")
         case .error(let msg): msg
         }
     }

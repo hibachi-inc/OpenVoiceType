@@ -1,6 +1,5 @@
 import AppKit
-import Speech
-import AVFoundation
+import Carbon.HIToolbox
 import ServiceManagement
 
 @MainActor
@@ -9,6 +8,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let coordinator = RecordingCoordinator()
     private let mainWindow = MainWindowController()
     private let hotkey = GlobalHotkey()
+    private let stopCmdV = GlobalHotkey()
+    private let stopReturn = GlobalHotkey()
+    private let cancelEsc = GlobalHotkey()
     #if PROFEATURES
     private var translateHotkeys: [GlobalHotkey] = []
     #endif
@@ -16,11 +18,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         coordinator.setup()
-        coordinator.onStateChanged = { [weak self] in self?.updateStatusIcon() }
+        coordinator.onStateChanged = { [weak self] in self?.handleStateChanged() }
         setupStatusItem()
         installHotkey()
         syncLaunchAtLogin()
-        Task { await requestPermissions() }
+        mainWindow.show()
     }
 
     // MARK: - Status Bar
@@ -41,23 +43,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.removeAllItems()
 
         let shortcutLabel = "\(prefs.hotkeyModifier.symbol)\(prefs.hotkeyKey.label)"
-        let title = coordinator.isRecording ? "Stop Recording" : "Start Recording (\(shortcutLabel))"
+        let title = coordinator.isRecording
+            ? String(localized: "menu.stop_recording")
+            : String(localized: "menu.start_recording \(shortcutLabel)")
         let item = NSMenuItem(title: title, action: #selector(toggleRecording), keyEquivalent: "")
         item.target = self
         menu.addItem(item)
 
         menu.addItem(.separator())
-        let info = NSMenuItem(title: "\(shortcutLabel) to toggle recording", action: nil, keyEquivalent: "")
+        let info = NSMenuItem(title: String(localized: "menu.shortcut_hint \(shortcutLabel)"), action: nil, keyEquivalent: "")
         info.isEnabled = false
         menu.addItem(info)
 
         menu.addItem(.separator())
-        let settings = NSMenuItem(title: "Settings...", action: #selector(openSettings), keyEquivalent: ",")
+        let settings = NSMenuItem(title: String(localized: "menu.settings"), action: #selector(openSettings), keyEquivalent: ",")
         settings.target = self
         menu.addItem(settings)
 
         menu.addItem(.separator())
-        let quit = NSMenuItem(title: "Quit OpenVoiceText", action: #selector(terminateApp), keyEquivalent: "q")
+        let quit = NSMenuItem(title: String(localized: "menu.quit"), action: #selector(terminateApp), keyEquivalent: "q")
         quit.target = self
         menu.addItem(quit)
     }
@@ -65,6 +69,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func openSettings() {
         mainWindow.show()
     }
+
+    var recordingCoordinator: RecordingCoordinator { coordinator }
 
     // MARK: - Hotkey
 
@@ -85,7 +91,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         translateHotkeys = prefs.translationLanguages.compactMap { lang in
             let langKey = (lang.key.keyCode, lang.modifier.carbonModifier)
             let keyStr = "\(langKey.0)-\(langKey.1)"
-            // Skip duplicates: same shortcut as main hotkey or another translation language
             guard registeredKeys.insert(keyStr).inserted else { return nil }
             let hk = GlobalHotkey()
             let code = lang.code
@@ -100,8 +105,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         #endif
     }
 
+    // MARK: - Recording stop/cancel hotkeys
+
+    private func installStopHotkeys() {
+        // ⌘V → stop recording (text goes to clipboard, user can ⌘V again to paste)
+        stopCmdV.register(keyCode: UInt32(kVK_ANSI_V), modifiers: UInt32(cmdKey)) { [weak self] in
+            self?.coordinator.toggle()
+        }
+        // Return/Enter → stop recording
+        stopReturn.register(keyCode: UInt32(kVK_Return), modifiers: 0) { [weak self] in
+            self?.coordinator.toggle()
+        }
+        // Esc → cancel (no clipboard copy)
+        cancelEsc.register(keyCode: UInt32(kVK_Escape), modifiers: 0) { [weak self] in
+            self?.coordinator.cancel()
+        }
+    }
+
+    private func uninstallStopHotkeys() {
+        stopCmdV.unregister()
+        stopReturn.unregister()
+        cancelEsc.unregister()
+    }
+
     @objc private func toggleRecording() {
         coordinator.toggle()
+    }
+
+    private func handleStateChanged() {
+        if coordinator.isRecording {
+            installStopHotkeys()
+        } else {
+            uninstallStopHotkeys()
+        }
+        updateStatusIcon()
     }
 
     private func updateStatusIcon() {
@@ -124,28 +161,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } catch {}
     }
 
-    // MARK: - Permissions
-
-    private nonisolated func requestPermissions() async {
-        let speech = await withCheckedContinuation { cont in
-            SFSpeechRecognizer.requestAuthorization { cont.resume(returning: $0) }
-        }
-        if speech != .authorized {
-            await MainActor.run { coordinator.showPermissionError("Speech recognition permission required.") }
-        }
-        let mic = await AVCaptureDevice.requestAccess(for: .audio)
-        if !mic {
-            await MainActor.run { coordinator.showPermissionError("Microphone permission required.") }
-        }
-    }
-
     @objc private func terminateApp() {
         hotkey.unregister()
+        uninstallStopHotkeys()
         #if PROFEATURES
         translateHotkeys.forEach { $0.unregister() }
         #endif
         coordinator.disconnect()
         NSApplication.shared.terminate(nil)
+    }
+}
+
+extension AppDelegate {
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        mainWindow.show()
+        return true
     }
 }
 

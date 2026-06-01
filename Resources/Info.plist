@@ -2,27 +2,36 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleName</key>
-    <string>VoiceFlow</string>
-    <key>CFBundleDisplayName</key>
-    <string>VoiceFlow</string>
-    <key>CFBundleIdentifier</key>
-    <string>com.hibachi.voiceflow</string>
-    <key>CFBundleVersion</key>
-    <string>1</string>
-    <key>CFBundleShortVersionString</key>
-    <string>0.1.0</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleExecutable</key>
-    <string>VoiceFlowApp</string>
-    <key>LSMinimumSystemVersion</key>
-    <string>14.0</string>
-    <key>LSUIElement</key>
-    <true/>
-    <key>NSMicrophoneUsageDescription</key>
-    <string>VoiceFlow uses your microphone to transcribe speech to text. Audio is processed entirely on-device and never sent to any server.</string>
-    <key>NSSpeechRecognitionUsageDescription</key>
-    <string>VoiceFlow uses on-device speech recognition to convert your voice to text. No audio or text data leaves your device.</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>OpenVoiceText</string>
+	<key>CFBundleExecutable</key>
+	<string>VoiceFlowApp</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.hibachi.voiceflow</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>ja</string>
+	</array>
+	<key>CFBundleName</key>
+	<string>OpenVoiceText</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.2.0</string>
+	<key>CFBundleVersion</key>
+	<string>2</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+	<key>LSUIElement</key>
+	<false/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>OpenVoiceText uses your microphone to transcribe speech to text. Audio is processed entirely on-device and never sent to any server.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>OpenVoiceText uses on-device speech recognition to convert your voice to text. No audio or text data leaves your device.</string>
 </dict>
 </plist>

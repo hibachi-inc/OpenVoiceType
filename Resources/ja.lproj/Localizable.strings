@@ -1,0 +1,140 @@
+/* Menu */
+"menu.start_recording %@" = "録音開始 (%@)";
+"menu.stop_recording" = "録音停止";
+"menu.shortcut_hint %@" = "%@ で録音を切り替え";
+"menu.settings" = "設定...";
+"menu.quit" = "OpenVoiceText を終了";
+
+/* Permissions */
+"permission.speech" = "音声認識の権限が必要です。";
+"permission.microphone" = "マイクの権限が必要です。";
+
+/* HUD */
+"hud.listening" = "聞き取り中...";
+"hud.processing" = "整形中...";
+"hud.copied" = "コピー済み — ⌘V でペースト";
+"hud.inserted" = "入力済み";
+"hud.stop %@" = "%@ で停止";
+
+/* Sidebar */
+"sidebar.general" = "基本設定";
+"sidebar.hotkey" = "ショートカット";
+"sidebar.translation" = "翻訳";
+"sidebar.pro" = "Pro";
+"sidebar.history" = "履歴";
+"sidebar.about" = "このアプリについて";
+
+/* General Settings */
+"general.speech_recognition" = "音声認識";
+"general.language" = "言語";
+"general.locale.system" = "システムの既定";
+"general.locale.en_us" = "英語 (US)";
+"general.locale.en_gb" = "英語 (UK)";
+"general.locale.ja" = "日本語";
+"general.locale.zh_hans" = "中国語 (簡体字)";
+"general.locale.zh_hant" = "中国語 (繁体字)";
+"general.locale.ko" = "韓国語";
+"general.locale.de" = "ドイツ語";
+"general.locale.fr" = "フランス語";
+"general.locale.es" = "スペイン語";
+"general.on_device" = "デバイス上で処理されます。音声がサーバーに送信されることはありません。";
+"general.stt_engine" = "認識エンジン";
+"general.stt_engine.auto" = "高精度（Apple Intelligence）";
+"general.stt_engine.auto_desc" = "高精度な認識と自動句読点。macOS 26以降が必要。";
+"general.stt_engine.classic" = "クラシック（SFSpeechRecognizer）";
+"general.stt_engine.classic_desc" = "標準のオンデバイス音声認識。";
+"general.refinement" = "テキスト整形";
+"general.mode" = "モード";
+"general.startup" = "起動";
+"general.launch_at_login" = "ログイン時に起動";
+"general.app_language" = "アプリの言語";
+"general.app_language.system" = "システムの既定";
+"general.app_language.en" = "English";
+"general.app_language.ja" = "日本語";
+"general.app_language_restart" = "言語の変更を反映するためにアプリを再起動します。";
+"general.restart_app" = "アプリを再起動";
+
+/* Refinement Mode */
+"refinement.off" = "オフ (生テキスト)";
+"refinement.off_desc" = "音声認識の結果をそのまま入力";
+"refinement.refine" = "基本整形 (フィラー除去)";
+"refinement.refine_desc" = "フィラーワードの除去と空白の正規化";
+"refinement.refine_pro" = "AI 整形";
+"refinement.refine_pro_desc" = "アクティブなアプリに合わせて Apple Intelligence で整形";
+
+/* Hotkey Settings */
+"hotkey.recording" = "録音";
+"hotkey.start_stop" = "録音の開始 / 停止";
+"hotkey.hint" = "このショートカットを押すと、どこでも音声入力を開始・停止できます。";
+"hotkey.press" = "ショートカットを押す...";
+
+/* History */
+"history.empty" = "履歴はまだありません";
+"history.empty_desc" = "音声入力の履歴がここに表示されます。";
+"history.copy" = "クリップボードにコピー";
+"history.copy_raw" = "元のテキストをコピー";
+"history.delete" = "削除";
+"history.clear_all" = "すべてクリア";
+"history.tap_to_start" = "タップして音声入力を開始";
+"history.recording" = "聞き取り中... タップして停止";
+"history.just_now" = "たった今";
+"history.minutes_ago %lld" = "%lld分前";
+"history.hours_ago %lld" = "%lld時間前";
+"history.days_ago %lld" = "%lld日前";
+
+/* About */
+"about.version %@ %@" = "バージョン %1$@ (%2$@)";
+"about.tagline" = "macOS 向けコンテキスト対応音声入力";
+"about.links" = "リンク";
+"about.github" = "GitHub リポジトリ";
+"about.bug_report" = "バグを報告";
+"about.x_account" = "@tanakaisworking（X）";
+"about.reki" = "Reki note — 同じチームが開発";
+"about.license" = "ライセンス";
+"about.license_text" = "MIT ライセンス — ヒバチ株式会社";
+"about.privacy" = "すべてローカルで処理。音声やテキストが Mac の外に出ることはありません。";
+
+/* Pro */
+"pro.title" = "OpenVoiceText Pro";
+"pro.unlocked" = "アンロック済み";
+"pro.upgrade_prompt" = "AI 整形と翻訳をアンロック";
+"pro.features" = "Pro 機能";
+"pro.ai_refinement" = "AIテキスト整形";
+"pro.context_aware" = "コンテキスト対応フォーマット (チャット・メール・コード...)";
+"pro.multi_lang" = "多言語翻訳";
+"pro.per_lang_shortcuts" = "言語ごとのショートカットで翻訳";
+"pro.upgrade %@" = "%@ でアップグレード";
+"pro.loading" = "読み込み中...";
+"pro.restore" = "購入を復元";
+"pro.ai_refinement_active" = "AI 整形";
+"pro.translation_active" = "翻訳";
+
+/* Translation Settings */
+"translation.enabled" = "有効な言語";
+"translation.empty" = "翻訳言語が設定されていません。";
+"translation.add" = "言語を追加...";
+"translation.how_it_works" = "使い方";
+"translation.how_it_works_desc" = "言語ごとにショートカットがあります。ショートカットを押して話すと、翻訳されたテキストが入力されます。";
+"translation.add_title" = "翻訳言語を追加";
+"translation.all_enabled" = "すべての言語が既に有効です。";
+"translation.language" = "言語";
+"translation.cancel" = "キャンセル";
+"translation.add_button" = "追加";
+
+/* Engine */
+"engine.enhanced_short" = "AI";
+"engine.classic_short" = "クラシック";
+
+/* Model Download */
+"general.model.checking" = "モデルの状態を確認中...";
+"general.model.installed" = "AIモデル準備完了";
+"general.model.not_installed" = "AIモデル未ダウンロード";
+"general.model.download" = "ダウンロード";
+"general.model.downloading %lld" = "ダウンロード中... %lld%%";
+"general.model.cancel" = "キャンセル";
+"general.model.retry" = "再試行";
+"general.model.unsupported" = "この言語ではAIモデルを利用できません";
+
+/* Errors */
+"error.stt_connection_lost" = "音声認識サービスとの接続が切れました。";
+"error.refinement_timeout" = "整形をスキップしました (タイムアウト)";

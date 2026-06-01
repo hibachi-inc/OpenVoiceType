@@ -18,8 +18,8 @@
         <string>Application</string>
     </dict>
     <key>NSMicrophoneUsageDescription</key>
-    <string>VoiceFlow uses your microphone to transcribe speech to text entirely on-device.</string>
+    <string>OpenVoiceText uses your microphone to transcribe speech to text entirely on-device.</string>
     <key>NSSpeechRecognitionUsageDescription</key>
-    <string>VoiceFlow uses on-device speech recognition. No data leaves your device.</string>
+    <string>OpenVoiceText uses on-device speech recognition. No data leaves your device.</string>
 </dict>
 </plist>

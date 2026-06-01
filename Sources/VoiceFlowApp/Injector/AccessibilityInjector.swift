@@ -4,18 +4,17 @@ import Carbon.HIToolbox
 /// Injects text by simulating ⌘V paste via CGEvent.
 /// Requires Accessibility permission (AXIsProcessTrusted).
 /// Used in the direct-distribution build (`#if DIRECT`).
+@MainActor
 struct AccessibilityInjector: TextInjecting {
     private enum Timing {
-        static let preWriteDelay: useconds_t       = 60_000   // 60ms — wait for pasteboard write to settle
-        static let interPasteDelay: useconds_t     = 140_000  // 140ms — gap between double-paste
-        static let postPasteDelay: useconds_t      = 220_000  // 220ms — wait for target app to process paste
-        static let inputSourceDelay: useconds_t    = 50_000   // 50ms — wait for input source switch
+        static let inputSourceDelay: TimeInterval  = 0.05    // 50ms — wait for input source switch
+        static let preWriteDelay: TimeInterval     = 0.06    // 60ms — wait for pasteboard write to settle
+        static let interPasteDelay: TimeInterval   = 0.14    // 140ms — gap between double-paste
+        static let postPasteDelay: TimeInterval     = 0.22    // 220ms — wait for target app to process paste
     }
 
     func inject(_ text: String) {
-        DispatchQueue.global(qos: .userInitiated).async {
-            Self.performInjection(text)
-        }
+        Self.performInjection(text)
     }
 
     private static func performInjection(_ text: String) {
@@ -29,21 +28,22 @@ struct AccessibilityInjector: TextInjecting {
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
 
-        usleep(Timing.preWriteDelay)
+        let t1 = Timing.inputSourceDelay + Timing.preWriteDelay
+        let t2 = t1 + Timing.interPasteDelay
+        let t3 = t2 + Timing.postPasteDelay
 
-        // Double-paste: some apps (notably Electron-based) drop the first paste event
-        postPaste()
-        usleep(Timing.interPasteDelay)
-        postPaste()
-
-        usleep(Timing.postPasteDelay)
-
-        // clearContents() +1, setString() +1 = savedChangeCount + 2
-        if pasteboard.changeCount == savedChangeCount + 2 {
-            restorePasteboard(pasteboard, items: savedItems)
+        DispatchQueue.main.asyncAfter(deadline: .now() + t1) {
+            postPaste()
         }
-
-        TISSelectInputSource(savedInputSource)
+        DispatchQueue.main.asyncAfter(deadline: .now() + t2) {
+            postPaste()
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + t3) {
+            if pasteboard.changeCount == savedChangeCount + 2 {
+                restorePasteboard(pasteboard, items: savedItems)
+            }
+            TISSelectInputSource(savedInputSource)
+        }
     }
 
     // MARK: - Paste simulation
@@ -68,7 +68,6 @@ struct AccessibilityInjector: TextInjecting {
         )?.takeRetainedValue() as? [TISInputSource],
               let abc = sources.first else { return }
         TISSelectInputSource(abc)
-        usleep(Timing.inputSourceDelay)
     }
 
     // MARK: - Pasteboard save/restore

@@ -7,9 +7,9 @@ struct TranslationSettingsView: View {
 
     var body: some View {
         Form {
-            Section("Enabled Languages") {
+            Section("translation.enabled") {
                 if prefs.translationLanguages.isEmpty {
-                    Text("No translation languages enabled.")
+                    Text("translation.empty")
                         .foregroundStyle(DS.Colors.secondary)
                 } else {
                     ForEach(prefs.translationLanguages) { lang in
@@ -52,17 +52,17 @@ struct TranslationSettingsView: View {
                         }
                     }
                 }
-                Button("Add Language...") { showingAddSheet = true }
+                Button("translation.add") { showingAddSheet = true }
             }
 
-            Section("How it works") {
-                Text("Each language has its own shortcut. Press the shortcut to record, speak in any language, and get translated text.")
+            Section("translation.how_it_works") {
+                Text("translation.how_it_works_desc")
                     .font(DS.Font.caption)
                     .foregroundStyle(DS.Colors.secondary)
             }
         }
         .formStyle(.grouped)
-        .navigationTitle("Translation")
+        .navigationTitle(String(localized: "sidebar.translation"))
         .sheet(isPresented: $showingAddSheet) {
             AddLanguageSheet(onAdd: { lang in
                 prefs.translationLanguages.append(lang)
@@ -91,12 +91,12 @@ struct AddLanguageSheet: View {
 
     var body: some View {
         VStack(spacing: DS.Spacing.lg) {
-            Text("Add Translation Language").font(DS.Font.headline)
+            Text("translation.add_title").font(DS.Font.headline)
             if availableLanguages.isEmpty {
-                Text("All languages are already enabled.")
+                Text("translation.all_enabled")
                     .foregroundStyle(DS.Colors.secondary)
             } else {
-                Picker("Language", selection: $selected) {
+                Picker("translation.language", selection: $selected) {
                     ForEach(availableLanguages) { lang in
                         Text(lang.label).tag(lang)
                     }
@@ -104,9 +104,9 @@ struct AddLanguageSheet: View {
                 .onAppear { if let first = availableLanguages.first { selected = first } }
             }
             HStack {
-                Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
+                Button("translation.cancel") { dismiss() }.keyboardShortcut(.cancelAction)
                 Spacer()
-                Button("Add") {
+                Button("translation.add_button") {
                     onAdd(TranslationLanguage(
                         code: selected.rawValue, label: selected.label,
                         modifier: .control, key: selected.defaultKey

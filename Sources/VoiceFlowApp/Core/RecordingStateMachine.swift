@@ -38,6 +38,10 @@ enum RecordingEvent {
 final class RecordingStateMachine {
     private(set) var state: RecordingState = .idle
 
+    func forceReset() {
+        state = .idle
+    }
+
     @discardableResult
     func transition(_ event: RecordingEvent) -> RecordingState {
         let next: RecordingState

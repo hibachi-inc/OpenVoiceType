@@ -21,8 +21,11 @@ final class HistoryEntry {
 }
 
 @MainActor
+@Observable
 final class HistoryStore {
     static let shared = HistoryStore()
+
+    private(set) var entries: [HistoryEntry] = []
 
     let container: ModelContainer
     let context: ModelContext
@@ -31,15 +34,19 @@ final class HistoryStore {
 
     private init() {
         let schema = Schema([HistoryEntry.self])
-        let diskConfig = ModelConfiguration(isStoredInMemoryOnly: false)
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let storeDir = appSupport.appendingPathComponent("OpenVoiceText", isDirectory: true)
+        try? FileManager.default.createDirectory(at: storeDir, withIntermediateDirectories: true)
+        let storeURL = storeDir.appendingPathComponent("history.store")
+        let diskConfig = ModelConfiguration(url: storeURL)
         let memoryConfig = ModelConfiguration(isStoredInMemoryOnly: true)
         do {
             container = try ModelContainer(for: schema, configurations: [diskConfig])
         } catch {
-            // Fallback to in-memory if disk store is corrupted (e.g. schema migration failure)
             container = try! ModelContainer(for: schema, configurations: [memoryConfig])
         }
         context = ModelContext(container)
+        reload()
     }
 
     func add(rawTranscript: String, refinedText: String, appName: String, category: String) {
@@ -50,30 +57,32 @@ final class HistoryStore {
             category: category
         )
         context.insert(entry)
-        trimOldEntries()
         try? context.save()
-    }
-
-    func fetchAll() -> [HistoryEntry] {
-        let descriptor = FetchDescriptor<HistoryEntry>(
-            sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
-        )
-        return (try? context.fetch(descriptor)) ?? []
+        reload()
+        trimOldEntries()
     }
 
     func delete(_ entry: HistoryEntry) {
         context.delete(entry)
         try? context.save()
+        reload()
     }
 
     func clearAll() {
-        let entries = fetchAll()
         for entry in entries { context.delete(entry) }
         try? context.save()
+        reload()
+    }
+
+    func reload() {
+        let descriptor = FetchDescriptor<HistoryEntry>(
+            sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
+        )
+        entries = (try? context.fetch(descriptor)) ?? []
     }
 
     private func trimOldEntries() {
-        let all = fetchAll()
+        let all = entries
         guard all.count > maxEntries else { return }
         for entry in all.suffix(from: maxEntries) {
             context.delete(entry)

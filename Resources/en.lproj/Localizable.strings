@@ -1,0 +1,140 @@
+/* Menu */
+"menu.start_recording %@" = "Start Recording (%@)";
+"menu.stop_recording" = "Stop Recording";
+"menu.shortcut_hint %@" = "%@ to toggle recording";
+"menu.settings" = "Settings...";
+"menu.quit" = "Quit OpenVoiceText";
+
+/* Permissions */
+"permission.speech" = "Speech recognition permission required.";
+"permission.microphone" = "Microphone permission required.";
+
+/* HUD */
+"hud.listening" = "Listening...";
+"hud.processing" = "Refining...";
+"hud.copied" = "Copied — ⌘V to paste";
+"hud.inserted" = "Inserted";
+"hud.stop %@" = "%@ stop";
+
+/* Sidebar */
+"sidebar.general" = "Preferences";
+"sidebar.hotkey" = "Hotkey";
+"sidebar.translation" = "Translation";
+"sidebar.pro" = "Pro";
+"sidebar.history" = "History";
+"sidebar.about" = "About";
+
+/* General Settings */
+"general.speech_recognition" = "Speech Recognition";
+"general.language" = "Language";
+"general.locale.system" = "System Default";
+"general.locale.en_us" = "English (US)";
+"general.locale.en_gb" = "English (UK)";
+"general.locale.ja" = "Japanese";
+"general.locale.zh_hans" = "Chinese (Simplified)";
+"general.locale.zh_hant" = "Chinese (Traditional)";
+"general.locale.ko" = "Korean";
+"general.locale.de" = "German";
+"general.locale.fr" = "French";
+"general.locale.es" = "Spanish";
+"general.on_device" = "On-device recognition. No audio is sent to any server.";
+"general.stt_engine" = "Recognition Engine";
+"general.stt_engine.auto" = "Enhanced (Apple Intelligence)";
+"general.stt_engine.auto_desc" = "Higher accuracy with automatic punctuation. Requires macOS 26+.";
+"general.stt_engine.classic" = "Classic (SFSpeechRecognizer)";
+"general.stt_engine.classic_desc" = "Standard on-device speech recognition.";
+"general.refinement" = "Text Refinement";
+"general.mode" = "Mode";
+"general.startup" = "Startup";
+"general.launch_at_login" = "Launch at login";
+"general.app_language" = "App Language";
+"general.app_language.system" = "System Default";
+"general.app_language.en" = "English";
+"general.app_language.ja" = "日本語";
+"general.app_language_restart" = "The app will restart to apply the language change.";
+"general.restart_app" = "Restart App";
+
+/* Refinement Mode */
+"refinement.off" = "Off (raw transcript)";
+"refinement.off_desc" = "Insert speech-to-text output as-is";
+"refinement.refine" = "Basic cleanup (filler removal)";
+"refinement.refine_desc" = "Remove filler words and normalize whitespace";
+"refinement.refine_pro" = "AI Refinement";
+"refinement.refine_pro_desc" = "Clean up with Apple Intelligence based on active app";
+
+/* Hotkey Settings */
+"hotkey.recording" = "Recording";
+"hotkey.start_stop" = "Start / Stop Recording";
+"hotkey.hint" = "Press this shortcut anywhere to start/stop voice input.";
+"hotkey.press" = "Press shortcut...";
+
+/* History */
+"history.empty" = "No history yet";
+"history.empty_desc" = "Voice input history will appear here.";
+"history.copy" = "Copy to Clipboard";
+"history.copy_raw" = "Copy Raw Transcript";
+"history.delete" = "Delete";
+"history.clear_all" = "Clear All";
+"history.tap_to_start" = "Tap to start voice input";
+"history.recording" = "Listening... Tap to stop";
+"history.just_now" = "Just now";
+"history.minutes_ago %lld" = "%lldm ago";
+"history.hours_ago %lld" = "%lldh ago";
+"history.days_ago %lld" = "%lldd ago";
+
+/* About */
+"about.version %@ %@" = "Version %@ (%@)";
+"about.tagline" = "Context-aware voice input for macOS";
+"about.links" = "Links";
+"about.github" = "GitHub Repository";
+"about.bug_report" = "Report a Bug";
+"about.x_account" = "@tanakaisworking on X";
+"about.reki" = "Reki note — by the same team";
+"about.license" = "License";
+"about.license_text" = "MIT License — Hibachi Inc.";
+"about.privacy" = "100% local processing. No audio or text data ever leaves your Mac.";
+
+/* Pro */
+"pro.title" = "OpenVoiceText Pro";
+"pro.unlocked" = "Unlocked";
+"pro.upgrade_prompt" = "Upgrade to unlock AI refinement and translation";
+"pro.features" = "Pro Features";
+"pro.ai_refinement" = "AI-powered text refinement";
+"pro.context_aware" = "Context-aware formatting (chat, email, code...)";
+"pro.multi_lang" = "Multi-language translation";
+"pro.per_lang_shortcuts" = "Translate with per-language shortcuts";
+"pro.upgrade %@" = "Upgrade for %@";
+"pro.loading" = "Loading...";
+"pro.restore" = "Restore Purchases";
+"pro.ai_refinement_active" = "AI Refinement";
+"pro.translation_active" = "Translation";
+
+/* Translation Settings */
+"translation.enabled" = "Enabled Languages";
+"translation.empty" = "No translation languages enabled.";
+"translation.add" = "Add Language...";
+"translation.how_it_works" = "How it works";
+"translation.how_it_works_desc" = "Each language has its own shortcut. Press the shortcut to record, speak in any language, and get translated text.";
+"translation.add_title" = "Add Translation Language";
+"translation.all_enabled" = "All languages are already enabled.";
+"translation.language" = "Language";
+"translation.cancel" = "Cancel";
+"translation.add_button" = "Add";
+
+/* Engine */
+"engine.enhanced_short" = "AI";
+"engine.classic_short" = "Classic";
+
+/* Model Download */
+"general.model.checking" = "Checking model status...";
+"general.model.installed" = "AI model ready";
+"general.model.not_installed" = "AI model not downloaded";
+"general.model.download" = "Download";
+"general.model.downloading %lld" = "Downloading... %lld%%";
+"general.model.cancel" = "Cancel";
+"general.model.retry" = "Retry";
+"general.model.unsupported" = "AI model not available for this language";
+
+/* Errors */
+"error.stt_connection_lost" = "Speech service connection lost.";
+"error.refinement_timeout" = "Refinement skipped (timeout)";

@@ -11,6 +11,7 @@ private class STTClientWeakProxy: NSObject, STTClientProtocol {
     func didUpdateTranscript(_ text: String) { target?.didUpdateTranscript(text) }
     func didUpdateAudioLevel(_ level: Float) { target?.didUpdateAudioLevel(level) }
     func didEncounterError(_ description: String) { target?.didEncounterError(description) }
+    func didChangeEngine(_ engine: String) { target?.didChangeEngine(engine) }
 }
 
 @MainActor
@@ -18,6 +19,7 @@ final class STTXPCClient: NSObject, STTClientProtocol, STTClientProtocol_App {
     var onTranscript: ((String) -> Void)?
     var onAudioLevel: ((Float) -> Void)?
     var onError: ((String) -> Void)?
+    var onEngineChanged: ((String) -> Void)?
     var onConnectionInvalidated: (() -> Void)?
 
     private var connection: NSXPCConnection?
@@ -68,9 +70,9 @@ final class STTXPCClient: NSObject, STTClientProtocol, STTClientProtocol_App {
         } as? STTServiceProtocol
     }
 
-    func startRecording(locale: String) {
-        logger.info("Starting recording with locale: \(locale)")
-        service?.startRecording(locale: locale)
+    func startRecording(locale: String, engine: String = "enhanced") {
+        logger.info("Starting recording with locale: \(locale), engine: \(engine)")
+        service?.startRecording(locale: locale, engine: engine)
     }
 
     func stopRecording() async -> String? {
@@ -106,5 +108,10 @@ final class STTXPCClient: NSObject, STTClientProtocol, STTClientProtocol_App {
     nonisolated func didEncounterError(_ description: String) {
         logger.error("STT service error: \(description)")
         Task { @MainActor in self.onError?(description) }
+    }
+
+    nonisolated func didChangeEngine(_ engine: String) {
+        logger.info("STT engine changed to: \(engine)")
+        Task { @MainActor in self.onEngineChanged?(engine) }
     }
 }

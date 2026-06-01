@@ -5,21 +5,21 @@ struct HotkeySettingsView: View {
 
     var body: some View {
         Form {
-            Section("Recording") {
+            Section("hotkey.recording") {
                 ShortcutRecorder(
-                    label: "Start / Stop Recording",
+                    label: String(localized: "hotkey.start_stop"),
                     modifier: $prefs.hotkeyModifier,
                     key: $prefs.hotkeyKey,
                     onChange: reinstallHotkey
                 )
 
-                Text("Press this shortcut anywhere to start/stop voice input.")
+                Text("hotkey.hint")
                     .font(DS.Font.caption)
                     .foregroundStyle(DS.Colors.secondary)
             }
         }
         .formStyle(.grouped)
-        .navigationTitle("Hotkey")
+        .navigationTitle(String(localized: "sidebar.hotkey"))
     }
 
     private func reinstallHotkey() {

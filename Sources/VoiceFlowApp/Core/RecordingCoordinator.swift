@@ -1,6 +1,9 @@
 import Foundation
+import Speech
+import AVFoundation
 
 @MainActor
+@Observable
 final class RecordingCoordinator {
     let session: RecordingStateMachine
     private var sttClient: STTClientProtocol_App
@@ -19,8 +22,17 @@ final class RecordingCoordinator {
     private var stopTask: Task<Void, Never>?
     private var cancelTask: Task<Void, Never>?
     private var errorResetTask: Task<Void, Never>?
+    private var safetyTimerTask: Task<Void, Never>?
+    private var fallbackTask: Task<Void, Never>?
 
-    var isRecording: Bool { session.state.isActive }
+    private(set) var isRecording: Bool = false
+    private(set) var currentTranscript: String = ""
+    private(set) var activeEngine: String = ""
+    private var enhancedCrashed = false
+
+    private func syncState() {
+        isRecording = session.state.isActive
+    }
 
     init(
         session: RecordingStateMachine = RecordingStateMachine(),
@@ -48,18 +60,37 @@ final class RecordingCoordinator {
         hud.onTap = { [weak self] in self?.toggle() }
         sttClient.onTranscript = { [weak self] text in
             guard let self, case .recording = self.session.state else { return }
+            self.currentTranscript = text
             self.hud.updateTranscript(text)
         }
         sttClient.onAudioLevel = { [weak self] level in
             guard let self, case .recording = self.session.state else { return }
             self.hud.updateAudioLevel(level)
         }
+        sttClient.onEngineChanged = { [weak self] engine in
+            self?.activeEngine = engine
+            self?.hud.updateEngine(engine)
+        }
         sttClient.onError = { [weak self] message in
             self?.handleError(message)
         }
         sttClient.onConnectionInvalidated = { [weak self] in
-            guard let self, self.session.state.isActive else { return }
-            self.handleError("Speech service connection lost.")
+            guard let self else { return }
+            if self.activeEngine == "enhanced" && !self.enhancedCrashed {
+                self.enhancedCrashed = true
+                FileLogger.log("Enhanced engine crashed XPC, retrying with classic after delay")
+                self.session.forceReset()
+                self.syncState()
+                self.onStateChanged?()
+                self.fallbackTask = Task { [weak self] in
+                    try? await Task.sleep(for: .seconds(1))
+                    guard !Task.isCancelled, let self else { return }
+                    self.startRecording(engineOverride: "classic")
+                }
+                return
+            }
+            guard self.session.state.isActive else { return }
+            self.handleError(String(localized: "error.stt_connection_lost"))
         }
         refinerClient.onError = { [weak self] message in
             self?.handleError(message)
@@ -73,6 +104,11 @@ final class RecordingCoordinator {
         handleToggle()
     }
 
+    func cancel() {
+        guard session.state.isActive else { return }
+        cancelRecording()
+    }
+
     #if PROFEATURES
     func toggleTranslation(_ targetLanguage: String) {
         currentMode = .translate(targetLanguage)
@@ -81,6 +117,7 @@ final class RecordingCoordinator {
     #endif
 
     private func handleToggle() {
+        FileLogger.log("handleToggle state=\(String(describing: self.session.state)) stopTask=\(self.stopTask != nil) cancelTask=\(self.cancelTask != nil)")
         switch session.state {
         case .idle:
             startRecording()
@@ -89,11 +126,23 @@ final class RecordingCoordinator {
         case .starting, .processing:
             cancelRecording()
         default:
+            FileLogger.log("handleToggle: default branch, no action")
             break
         }
     }
 
     func disconnect() {
+        stopTask?.cancel()
+        stopTask = nil
+        cancelTask?.cancel()
+        cancelTask = nil
+        safetyTimerTask?.cancel()
+        safetyTimerTask = nil
+        errorResetTask?.cancel()
+        errorResetTask = nil
+        fallbackTask?.cancel()
+        fallbackTask = nil
+        session.forceReset()
         sttClient.disconnect()
         refinerClient.disconnect()
     }
@@ -102,29 +151,76 @@ final class RecordingCoordinator {
         hud.showError(message)
     }
 
+    // MARK: - Permissions
+
+    private func ensurePermissions() -> Bool {
+        let speechStatus = SFSpeechRecognizer.authorizationStatus()
+        let micStatus = AVCaptureDevice.authorizationStatus(for: .audio)
+
+        if speechStatus == .notDetermined || micStatus == .notDetermined {
+            Task { await requestPermissions() }
+            return false
+        }
+        if speechStatus != .authorized {
+            showPermissionError(String(localized: "permission.speech"))
+            return false
+        }
+        if micStatus != .authorized {
+            showPermissionError(String(localized: "permission.microphone"))
+            return false
+        }
+        return true
+    }
+
+    private nonisolated func requestPermissions() async {
+        if SFSpeechRecognizer.authorizationStatus() == .notDetermined {
+            _ = await withCheckedContinuation { cont in
+                SFSpeechRecognizer.requestAuthorization { cont.resume(returning: $0) }
+            }
+        }
+        if AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined {
+            _ = await AVCaptureDevice.requestAccess(for: .audio)
+        }
+    }
+
     // MARK: - Private
 
-    private func startRecording() {
+    private func startRecording(engineOverride: String? = nil) {
         guard cancelTask == nil else { return }
 
+        if !ensurePermissions() { return }
+
+        if engineOverride == nil {
+            enhancedCrashed = false
+        }
+        fallbackTask?.cancel()
+        fallbackTask = nil
         errorResetTask?.cancel()
         errorResetTask = nil
 
         session.transition(.startRequested)
+        currentTranscript = ""
+        syncState()
         hud.showListening()
         onStateChanged?()
 
         let rawLocale = prefs.locale == "system" ? Locale.current.identifier : prefs.locale
         let localeID = Locale(identifier: rawLocale).identifier
-        sttClient.startRecording(locale: localeID)
+        let engine = engineOverride ?? (enhancedCrashed ? "classic" : prefs.sttEngine.rawValue)
+        FileLogger.log("startRecording engine=\(engine)")
+        sttClient.startRecording(locale: localeID, engine: engine)
         session.transition(.micReady)
     }
 
     private func stopRecording() {
+        FileLogger.log("stopRecording called, stopTask=\(self.stopTask != nil)")
+        guard stopTask == nil else { FileLogger.log("stopRecording BLOCKED by existing stopTask"); return }
         session.transition(.stopRequested)
+        syncState()
         onStateChanged?()
 
         stopTask = Task {
+            defer { stopTask = nil }
             let rawTranscript = await sttClient.stopRecording() ?? ""
 
             guard !Task.isCancelled else { return }
@@ -132,6 +228,7 @@ final class RecordingCoordinator {
             if rawTranscript.isEmpty {
                 session.transition(.refinementDone)
                 hud.hide()
+                syncState()
                 onStateChanged?()
                 return
             }
@@ -169,7 +266,7 @@ final class RecordingCoordinator {
             )
 
             if timedOut {
-                hud.showError("Refinement skipped (timeout)")
+                hud.showError(String(localized: "error.refinement_timeout"))
             } else {
                 #if DIRECT
                 hud.showInserted(text: refined)
@@ -177,27 +274,43 @@ final class RecordingCoordinator {
                 hud.showCopied(text: refined)
                 #endif
             }
+            syncState()
             onStateChanged?()
         }
     }
 
     private func cancelRecording() {
+        FileLogger.log("cancelRecording called")
         session.transition(.cancel)
+        let pendingStopTask = stopTask
         stopTask?.cancel()
         stopTask = nil
         cancelTask = Task {
-            let _ = await sttClient.stopRecording()
+            if let pendingStopTask {
+                await pendingStopTask.value
+            } else {
+                let _ = await sttClient.stopRecording()
+            }
+            safetyTimerTask?.cancel()
+            safetyTimerTask = nil
             cancelTask = nil
+            session.transition(.reset)
+            syncState()
+            onStateChanged?()
         }
         // Safety: if cancelTask hangs, force-clear after 5 seconds
-        Task {
+        safetyTimerTask?.cancel()
+        safetyTimerTask = Task {
             try? await Task.sleep(for: .seconds(5))
-            if cancelTask != nil {
-                cancelTask?.cancel()
-                cancelTask = nil
-            }
+            guard !Task.isCancelled else { return }
+            cancelTask?.cancel()
+            cancelTask = nil
+            session.transition(.reset)
+            syncState()
+            onStateChanged?()
         }
         hud.hide()
+        syncState()
         onStateChanged?()
     }
 
@@ -207,6 +320,7 @@ final class RecordingCoordinator {
         stopTask = nil
         session.transition(.failed(message))
         hud.showError(message)
+        syncState()
         onStateChanged?()
 
         errorResetTask?.cancel()
@@ -214,6 +328,7 @@ final class RecordingCoordinator {
             try? await Task.sleep(for: .seconds(3))
             guard !Task.isCancelled, case .error = session.state else { return }
             session.transition(.reset)
+            syncState()
             onStateChanged?()
         }
     }

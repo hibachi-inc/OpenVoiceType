@@ -1,16 +1,29 @@
 import SwiftUI
 
 enum SidebarSection: String, CaseIterable, Identifiable {
-    case general = "General"
-    case hotkey = "Hotkey"
+    case history = "history"
+    case general = "general"
+    case hotkey = "hotkey"
     #if PROFEATURES
-    case translation = "Translation"
+    case translation = "translation"
+    case pro = "pro"
     #endif
-    case pro = "Pro"
-    case history = "History"
-    case about = "About"
+    case about = "about"
 
     var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .general: String(localized: "sidebar.general")
+        case .hotkey: String(localized: "sidebar.hotkey")
+        #if PROFEATURES
+        case .translation: String(localized: "sidebar.translation")
+        case .pro: String(localized: "sidebar.pro")
+        #endif
+        case .history: String(localized: "sidebar.history")
+        case .about: String(localized: "sidebar.about")
+        }
+    }
 
     var icon: String {
         switch self {
@@ -18,8 +31,8 @@ enum SidebarSection: String, CaseIterable, Identifiable {
         case .hotkey: "keyboard"
         #if PROFEATURES
         case .translation: "globe"
-        #endif
         case .pro: "sparkles"
+        #endif
         case .history: "clock.arrow.circlepath"
         case .about: "info.circle"
         }
@@ -27,12 +40,12 @@ enum SidebarSection: String, CaseIterable, Identifiable {
 }
 
 struct MainWindowView: View {
-    @State private var selection: SidebarSection = .general
+    @State private var selection: SidebarSection = .history
 
     var body: some View {
         NavigationSplitView {
             List(SidebarSection.allCases, selection: $selection) { section in
-                Label(section.rawValue, systemImage: section.icon)
+                Label(section.label, systemImage: section.icon)
                     .tag(section)
             }
             .listStyle(.sidebar)
@@ -44,8 +57,8 @@ struct MainWindowView: View {
                 case .hotkey: HotkeySettingsView()
                 #if PROFEATURES
                 case .translation: TranslationSettingsView()
-                #endif
                 case .pro: ProUpgradeView()
+                #endif
                 case .history: HistoryView()
                 case .about: AboutView()
                 }

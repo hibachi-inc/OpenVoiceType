@@ -5,9 +5,10 @@ protocol STTClientProtocol_App {
     var onTranscript: ((String) -> Void)? { get set }
     var onAudioLevel: ((Float) -> Void)? { get set }
     var onError: ((String) -> Void)? { get set }
+    var onEngineChanged: ((String) -> Void)? { get set }
     var onConnectionInvalidated: (() -> Void)? { get set }
 
-    func startRecording(locale: String)
+    func startRecording(locale: String, engine: String)
     func stopRecording() async -> String?
     func disconnect()
 }
@@ -33,5 +34,6 @@ protocol HUDProtocol {
     func showError(_ message: String)
     func updateTranscript(_ text: String)
     func updateAudioLevel(_ level: Float)
+    func updateEngine(_ engine: String)
     func hide()
 }

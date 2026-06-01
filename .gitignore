@@ -3,3 +3,8 @@
 *.xcodeproj/xcuserdata/
 DerivedData/
 .DS_Store
+*.dmg
+
+# Pro-only sources injected by Pro build system
+Sources/VoiceFlowApp/Store/ProUpgradeManager.swift
+Sources/VoiceFlowApp/UI/MainWindow/ProUpgradeView.swift

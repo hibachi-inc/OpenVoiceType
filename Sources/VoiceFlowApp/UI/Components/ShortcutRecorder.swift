@@ -15,7 +15,7 @@ struct ShortcutRecorder: View {
             Spacer()
             Button(action: { isRecording.toggle() }) {
                 if isRecording {
-                    Text("Press shortcut...")
+                    Text("hotkey.press")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 12)

@@ -18,8 +18,20 @@ final class PreferencesStore {
     var refinementMode: RefinementMode {
         didSet { defaults.set(refinementMode.rawValue, forKey: "refinementMode") }
     }
+    var sttEngine: STTEngine {
+        didSet { defaults.set(sttEngine.rawValue, forKey: "sttEngine") }
+    }
     var launchAtLogin: Bool {
         didSet { defaults.set(launchAtLogin, forKey: "launchAtLogin") }
+    }
+    var appLanguage: String {
+        didSet {
+            if appLanguage == "system" {
+                defaults.removeObject(forKey: "AppleLanguages")
+            } else {
+                defaults.set([appLanguage], forKey: "AppleLanguages")
+            }
+        }
     }
 
     #if PROFEATURES
@@ -31,11 +43,17 @@ final class PreferencesStore {
     private let defaults = UserDefaults.standard
 
     private init() {
-        hotkeyModifier = HotkeyModifier(rawValue: defaults.string(forKey: "hotkeyModifier") ?? "") ?? .option
-        hotkeyKey = HotkeyKey(rawValue: defaults.string(forKey: "hotkeyKey") ?? "") ?? .space
+        hotkeyModifier = HotkeyModifier(rawValue: defaults.string(forKey: "hotkeyModifier") ?? "") ?? .control
+        hotkeyKey = HotkeyKey(rawValue: defaults.string(forKey: "hotkeyKey") ?? "") ?? .v
         locale = defaults.string(forKey: "locale") ?? "system"
         refinementMode = RefinementMode(rawValue: defaults.string(forKey: "refinementMode") ?? "") ?? .refine
+        sttEngine = STTEngine(rawValue: defaults.string(forKey: "sttEngine") ?? "") ?? .enhanced
         launchAtLogin = defaults.bool(forKey: "launchAtLogin")
+        if let langs = defaults.array(forKey: "AppleLanguages") as? [String], let first = langs.first {
+            appLanguage = first
+        } else {
+            appLanguage = "system"
+        }
         #if PROFEATURES
         translationLanguages = Self.loadTranslationLanguages(from: defaults)
         #endif
@@ -128,6 +146,15 @@ enum HotkeyKey: String, CaseIterable, Identifiable {
     }
 }
 
+// MARK: - STT Engine
+
+enum STTEngine: String, CaseIterable, Identifiable {
+    case enhanced = "enhanced"
+    case classic = "classic"
+
+    var id: String { rawValue }
+}
+
 // MARK: - Refinement Mode
 
 enum RefinementMode: String, CaseIterable, Identifiable {
@@ -136,24 +163,24 @@ enum RefinementMode: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    #if PROFEATURES
-    static let refineLabel = "AI Refinement"
-    static let refineDescription = "Clean up with Apple Intelligence based on active app"
-    #else
-    static let refineLabel = "Basic cleanup (filler removal)"
-    static let refineDescription = "Remove filler words and normalize whitespace"
-    #endif
-
     var label: String {
         switch self {
-        case .off: "Off (raw transcript)"
-        case .refine: Self.refineLabel
+        case .off: String(localized: "refinement.off")
+        #if PROFEATURES
+        case .refine: String(localized: "refinement.refine_pro")
+        #else
+        case .refine: String(localized: "refinement.refine")
+        #endif
         }
     }
     var description: String {
         switch self {
-        case .off: "Insert speech-to-text output as-is"
-        case .refine: Self.refineDescription
+        case .off: String(localized: "refinement.off_desc")
+        #if PROFEATURES
+        case .refine: String(localized: "refinement.refine_pro_desc")
+        #else
+        case .refine: String(localized: "refinement.refine_desc")
+        #endif
         }
     }
 }

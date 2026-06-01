@@ -6,5 +6,9 @@ import Foundation
 }
 
 public enum RefinerXPCConstants {
+    #if PROFEATURES
+    public static let serviceName = "com.hibachi.koeri.refiner"
+    #else
     public static let serviceName = "com.hibachi.voiceflow.refiner"
+    #endif
 }

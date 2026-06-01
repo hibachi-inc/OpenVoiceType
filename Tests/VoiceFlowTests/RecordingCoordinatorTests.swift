@@ -11,17 +11,26 @@ final class MockSTTClient: STTClientProtocol_App {
     var onError: ((String) -> Void)?
     var onConnectionInvalidated: (() -> Void)?
 
+    var onEngineChanged: ((String) -> Void)?
     var startedWithLocale: String?
+    var startedWithEngine: String?
+    var startCallCount = 0
     var stopCallCount = 0
     var transcriptToReturn: String? = "Hello world"
+    var stopDelay: Duration?
     var disconnected = false
 
-    func startRecording(locale: String) {
+    func startRecording(locale: String, engine: String = "enhanced") {
         startedWithLocale = locale
+        startedWithEngine = engine
+        startCallCount += 1
     }
 
     func stopRecording() async -> String? {
         stopCallCount += 1
+        if let delay = stopDelay {
+            try? await Task.sleep(for: delay)
+        }
         return transcriptToReturn
     }
 
@@ -74,6 +83,7 @@ final class MockHUD: HUDProtocol {
     func showError(_ message: String) { states.append("error:\(message)") }
     func updateTranscript(_ text: String) { states.append("transcript:\(text)") }
     func updateAudioLevel(_ level: Float) { states.append("level") }
+    func updateEngine(_ engine: String) { states.append("engine:\(engine)") }
     func hide() { states.append("hide") }
 }
 
@@ -166,24 +176,91 @@ struct RecordingCoordinatorTests {
         try? await Task.sleep(for: .milliseconds(50))
 
         #expect(injector.injectedText == "Test input")
-        #expect(hud.states.contains("error:Refinement skipped (timeout)"))
+        #expect(hud.states.contains { $0.hasPrefix("error:") && $0.contains("timeout") })
     }
 
     // MARK: - Cancel
 
-    @Test func cancelDuringRecordingHidesHUD() async {
-        let (coordinator, _, _, _, _) = makeCoordinator()
+    @Test func cancelDuringProcessingResetsToIdle() async {
+        let (coordinator, stt, _, hud, injector) = makeCoordinator()
+        stt.transcriptToReturn = "Hello"
+        stt.stopDelay = .milliseconds(500)
 
         coordinator.toggle() // start → recording
         #expect(coordinator.isRecording)
 
-        // Simulate pressing during .recording → normal stop
-        // To cancel, we need .starting or .processing state
-        // Let's test .starting by calling toggle immediately (before micReady)
-        // Actually after toggle, state goes to .recording synchronously
-        // Test cancel via direct state check is covered in StateMachine tests
-        // Here we test that disconnect works
+        coordinator.toggle() // stop → processing (stopTask starts, awaiting slow XPC)
+        #expect(coordinator.session.state == .processing(coordinator.session.state.sessionID!))
+
+        coordinator.toggle() // cancel during processing
+        try? await Task.sleep(for: .milliseconds(100))
+
+        #expect(hud.states.contains("hide"))
+        #expect(injector.injectedText == nil)
+
+        // Wait for cancelTask to complete
+        try? await Task.sleep(for: .milliseconds(600))
+
+        #expect(coordinator.session.state == .idle)
+    }
+
+    @Test func cancelResetsToIdleAndAllowsNewSession() async {
+        let (coordinator, stt, refiner, _, injector) = makeCoordinator()
+        stt.transcriptToReturn = "First"
+        stt.stopDelay = .milliseconds(300)
+
+        // Session 1: start → stop → cancel during processing
+        coordinator.toggle()
+        coordinator.toggle()
+        coordinator.toggle() // cancel
+        try? await Task.sleep(for: .milliseconds(500))
+
+        #expect(coordinator.session.state == .idle)
+        #expect(injector.injectedText == nil)
+
+        // Session 2: should work normally
+        stt.stopDelay = nil
+        stt.transcriptToReturn = "Second"
+        refiner.refinedToReturn = "Second refined"
+
+        coordinator.toggle()
+        #expect(coordinator.isRecording)
+        coordinator.toggle()
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #expect(injector.injectedText == "Second refined")
+        #expect(coordinator.session.state == .idle)
+    }
+
+    @Test func safetyTimerForcesResetWhenCancelHangs() async {
+        let (coordinator, stt, _, hud, _) = makeCoordinator()
+        stt.transcriptToReturn = "Hello"
+        stt.stopDelay = .seconds(10) // Simulate hung XPC
+
+        coordinator.toggle() // start
+        coordinator.toggle() // stop → processing
+        coordinator.toggle() // cancel during processing
+
+        #expect(hud.states.contains("hide"))
+
+        // Safety timer fires after 5 seconds
+        try? await Task.sleep(for: .seconds(6))
+
+        #expect(coordinator.session.state == .idle)
+    }
+
+    @Test func disconnectDuringCancelCleansUp() async {
+        let (coordinator, stt, _, _, _) = makeCoordinator()
+        stt.transcriptToReturn = "Hello"
+        stt.stopDelay = .milliseconds(500)
+
+        coordinator.toggle() // start
+        coordinator.toggle() // stop → processing
+        coordinator.toggle() // cancel
+
         coordinator.disconnect()
+
+        #expect(coordinator.session.state == .idle)
     }
 
     // MARK: - Disconnect
@@ -193,6 +270,20 @@ struct RecordingCoordinatorTests {
 
         coordinator.disconnect()
 
+        #expect(stt.disconnected)
+        #expect(refiner.disconnected)
+        #expect(coordinator.session.state == .idle)
+    }
+
+    @Test func disconnectDuringRecordingResetsState() async {
+        let (coordinator, stt, refiner, _, _) = makeCoordinator()
+
+        coordinator.toggle() // start → recording
+        #expect(coordinator.isRecording)
+
+        coordinator.disconnect()
+
+        #expect(coordinator.session.state == .idle)
         #expect(stt.disconnected)
         #expect(refiner.disconnected)
     }
@@ -230,6 +321,23 @@ struct RecordingCoordinatorTests {
 
         coordinator.toggle() // start
         #expect(callCount >= 1)
+    }
+
+    // MARK: - Engine change
+
+    @Test func engineChangedUpdatesActiveEngine() {
+        let (coordinator, stt, _, hud, _) = makeCoordinator()
+        coordinator.toggle()
+        stt.onEngineChanged?("enhanced")
+        #expect(coordinator.activeEngine == "enhanced")
+        #expect(hud.states.contains("engine:enhanced"))
+    }
+
+    @Test func engineChangedWhileIdleStillUpdates() {
+        let (coordinator, stt, _, hud, _) = makeCoordinator()
+        stt.onEngineChanged?("classic")
+        #expect(coordinator.activeEngine == "classic")
+        #expect(hud.states.contains("engine:classic"))
     }
 
     // MARK: - Permission error
@@ -270,6 +378,124 @@ struct RecordingCoordinatorTests {
 
         #expect(hud.states.contains { $0.starts(with: "error:") })
         #expect(!coordinator.isRecording)
+    }
+
+    @Test func enhancedCrashFallsBackToClassic() async {
+        let (coordinator, stt, _, hud, _) = makeCoordinator()
+
+        coordinator.toggle()
+        #expect(stt.startCallCount == 1)
+
+        stt.onEngineChanged?("enhanced")
+        stt.onConnectionInvalidated?()
+        try? await Task.sleep(for: .milliseconds(1200))
+
+        #expect(coordinator.isRecording)
+        #expect(stt.startCallCount == 2)
+        #expect(stt.startedWithEngine == "classic")
+        #expect(!hud.states.contains { $0.starts(with: "error:") })
+    }
+
+    @Test func classicCrashShowsError() async {
+        let (coordinator, stt, _, hud, _) = makeCoordinator()
+
+        coordinator.toggle()
+        stt.onEngineChanged?("classic")
+        stt.onConnectionInvalidated?()
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #expect(hud.states.contains { $0.starts(with: "error:") })
+        #expect(!coordinator.isRecording)
+    }
+
+    @Test func enhancedCrashRetryOnlyOnce() async {
+        let (coordinator, stt, _, hud, _) = makeCoordinator()
+
+        coordinator.toggle()
+        stt.onEngineChanged?("enhanced")
+        stt.onConnectionInvalidated?()
+        try? await Task.sleep(for: .milliseconds(1200))
+
+        #expect(stt.startCallCount == 2)
+
+        stt.onEngineChanged?("classic")
+        stt.onConnectionInvalidated?()
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #expect(hud.states.contains { $0.starts(with: "error:") })
+    }
+
+    // MARK: - Consecutive sessions
+
+    @Test func secondSessionWorksAfterFirst() async {
+        let (coordinator, stt, refiner, _, injector) = makeCoordinator()
+        stt.transcriptToReturn = "First"
+        refiner.refinedToReturn = "First refined"
+
+        coordinator.toggle()
+        coordinator.toggle()
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #expect(injector.injectedText == "First refined")
+        #expect(!coordinator.isRecording)
+
+        stt.transcriptToReturn = "Second"
+        refiner.refinedToReturn = "Second refined"
+        injector.injectedText = nil
+
+        coordinator.toggle()
+        #expect(coordinator.isRecording)
+        coordinator.toggle()
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #expect(injector.injectedText == "Second refined")
+        #expect(stt.stopCallCount == 2)
+        #expect(!coordinator.isRecording)
+    }
+
+    @Test func secondSessionWorksWithSlowStop() async {
+        let (coordinator, stt, refiner, _, injector) = makeCoordinator()
+        stt.transcriptToReturn = "First"
+        stt.stopDelay = .milliseconds(200)
+        refiner.refinedToReturn = "First refined"
+
+        coordinator.toggle()
+        coordinator.toggle()
+        try? await Task.sleep(for: .milliseconds(300))
+
+        #expect(injector.injectedText == "First refined")
+        #expect(!coordinator.isRecording)
+
+        stt.transcriptToReturn = "Second"
+        refiner.refinedToReturn = "Second refined"
+        injector.injectedText = nil
+
+        coordinator.toggle()
+        #expect(coordinator.isRecording)
+        coordinator.toggle()
+        try? await Task.sleep(for: .milliseconds(300))
+
+        #expect(injector.injectedText == "Second refined")
+        #expect(stt.stopCallCount == 2)
+    }
+
+    @Test func threeConsecutiveSessionsAllWork() async {
+        let (coordinator, stt, refiner, _, injector) = makeCoordinator()
+        stt.stopDelay = .milliseconds(100)
+
+        for i in 1...3 {
+            stt.transcriptToReturn = "Session \(i)"
+            refiner.refinedToReturn = "Refined \(i)"
+
+            coordinator.toggle()
+            #expect(coordinator.isRecording)
+            coordinator.toggle()
+            try? await Task.sleep(for: .milliseconds(200))
+
+            #expect(injector.injectedText == "Refined \(i)")
+            #expect(!coordinator.isRecording)
+        }
+        #expect(stt.stopCallCount == 3)
     }
 
     @Test func connectionInvalidatedWhileIdleIgnored() {
