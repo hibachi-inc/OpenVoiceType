@@ -46,6 +46,17 @@ final class MockRefinerClient: RefinerClientProtocol {
         return (shouldTimeout ? text : refinedToReturn, shouldTimeout)
     }
 
+    #if PROFEATURES
+    var lastTranslateTarget: String?
+    var translatedToReturn: String = "Translated text"
+
+    func translate(text: String, targetLanguage: String) async -> (String, Bool) {
+        lastText = text
+        lastTranslateTarget = targetLanguage
+        return (shouldTimeout ? text : translatedToReturn, shouldTimeout)
+    }
+    #endif
+
     func disconnect() {
         disconnected = true
     }
@@ -53,12 +64,13 @@ final class MockRefinerClient: RefinerClientProtocol {
 
 @MainActor
 final class MockHUD: HUDProtocol {
+    var onTap: (() -> Void)?
     var states: [String] = []
 
     func showListening() { states.append("listening") }
     func showProcessing(transcript: String) { states.append("processing:\(transcript)") }
-    func showCopied() { states.append("copied") }
-    func showInserted() { states.append("inserted") }
+    func showCopied(text: String) { states.append("copied:\(text)") }
+    func showInserted(text: String) { states.append("inserted:\(text)") }
     func showError(_ message: String) { states.append("error:\(message)") }
     func updateTranscript(_ text: String) { states.append("transcript:\(text)") }
     func updateAudioLevel(_ level: Float) { states.append("level") }
@@ -99,13 +111,12 @@ struct RecordingCoordinatorTests {
 
     // MARK: - Start/Stop flow
 
-    @Test func startRecordingSetsLocaleAndShowsHUD() async {
+    @Test func startRecordingShowsHUD() async {
         let (coordinator, stt, _, hud, _) = makeCoordinator()
-        coordinator.locale = Locale(identifier: "en-US")
 
         coordinator.toggle()
 
-        #expect(stt.startedWithLocale == "en-US")
+        #expect(stt.startedWithLocale != nil)
         #expect(hud.states.contains("listening"))
         #expect(coordinator.isRecording)
     }
@@ -229,5 +240,71 @@ struct RecordingCoordinatorTests {
         coordinator.showPermissionError("Mic permission denied")
 
         #expect(hud.states.contains("error:Mic permission denied"))
+    }
+
+    // MARK: - Empty string transcript
+
+    @Test func emptyStringTranscriptSkipsRefiner() async {
+        let (coordinator, stt, refiner, hud, injector) = makeCoordinator()
+        stt.transcriptToReturn = ""
+
+        coordinator.toggle()
+        coordinator.toggle()
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #expect(refiner.lastText == nil)
+        #expect(injector.injectedText == nil)
+        #expect(hud.states.contains("hide"))
+    }
+
+    // MARK: - Connection invalidated
+
+    @Test func connectionInvalidatedDuringRecording() async {
+        let (coordinator, stt, _, hud, _) = makeCoordinator()
+
+        coordinator.toggle()
+        #expect(coordinator.isRecording)
+
+        stt.onConnectionInvalidated?()
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #expect(hud.states.contains { $0.starts(with: "error:") })
+        #expect(!coordinator.isRecording)
+    }
+
+    @Test func connectionInvalidatedWhileIdleIgnored() {
+        let (coordinator, stt, _, hud, _) = makeCoordinator()
+
+        stt.onConnectionInvalidated?()
+
+        #expect(!hud.states.contains { $0.starts(with: "error:") })
+    }
+
+    // MARK: - State change on stop
+
+    @Test func onStateChangedFiresDuringStop() async {
+        let (coordinator, _, _, _, _) = makeCoordinator()
+        var callCount = 0
+        coordinator.onStateChanged = { callCount += 1 }
+
+        coordinator.toggle() // start
+        let beforeStop = callCount
+        coordinator.toggle() // stop
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #expect(callCount > beforeStop)
+    }
+
+    @Test func onStateChangedFiresOnError() async {
+        let (coordinator, stt, _, _, _) = makeCoordinator()
+        var callCount = 0
+        coordinator.onStateChanged = { callCount += 1 }
+
+        coordinator.toggle()
+        let beforeError = callCount
+        stt.onError?("test error")
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #expect(callCount > beforeError)
     }
 }

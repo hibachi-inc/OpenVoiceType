@@ -141,4 +141,4 @@ Sources/
 
 ---
 
-Built by [Hibachi Inc.](https://hibachi.co.jp) — makers of [Reki note](https://reki-note.com)
+Built by Hibachi Inc. — makers of [Reki note](https://rekinote.app/)

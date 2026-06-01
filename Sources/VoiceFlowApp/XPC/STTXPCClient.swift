@@ -4,6 +4,15 @@ import VoiceFlowProtocol
 
 private let logger = Logger(subsystem: "com.hibachi.voiceflow", category: "STTXPCClient")
 
+/// Weak proxy to break the retain cycle: NSXPCConnection → exportedObject → STTXPCClient.
+private class STTClientWeakProxy: NSObject, STTClientProtocol {
+    weak var target: STTXPCClient?
+
+    func didUpdateTranscript(_ text: String) { target?.didUpdateTranscript(text) }
+    func didUpdateAudioLevel(_ level: Float) { target?.didUpdateAudioLevel(level) }
+    func didEncounterError(_ description: String) { target?.didEncounterError(description) }
+}
+
 @MainActor
 final class STTXPCClient: NSObject, STTClientProtocol, STTClientProtocol_App {
     var onTranscript: ((String) -> Void)?
@@ -24,7 +33,10 @@ final class STTXPCClient: NSObject, STTClientProtocol, STTClientProtocol_App {
         let conn = NSXPCConnection(serviceName: STTXPCConstants.serviceName)
         conn.remoteObjectInterface = NSXPCInterface(with: STTServiceProtocol.self)
         conn.exportedInterface = NSXPCInterface(with: STTClientProtocol.self)
-        conn.exportedObject = self
+
+        let proxy = STTClientWeakProxy()
+        proxy.target = self
+        conn.exportedObject = proxy
 
         conn.invalidationHandler = { [weak self] in
             logger.warning("STT XPC connection invalidated")

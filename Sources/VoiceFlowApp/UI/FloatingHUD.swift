@@ -10,6 +10,12 @@ final class FloatingHUD: HUDProtocol {
     private var audioLevel: Float = 0
     private var autoHideTask: Task<Void, Never>?
     private var lastAudioLevelUpdate: ContinuousClock.Instant = .now
+    var onTap: (() -> Void)?
+
+    private var shortcutLabel: String {
+        let prefs = PreferencesStore.shared
+        return "\(prefs.hotkeyModifier.symbol)\(prefs.hotkeyKey.label)"
+    }
 
     func showListening() {
         cancelAutoHide()
@@ -26,18 +32,20 @@ final class FloatingHUD: HUDProtocol {
         updateContent()
     }
 
-    func showCopied() {
+    func showCopied(text: String) {
         cancelAutoHide()
         status = .copied
+        transcript = text
         updateContent()
-        scheduleAutoHide(after: .seconds(1.5))
+        scheduleAutoHide(after: .seconds(2))
     }
 
-    func showInserted() {
+    func showInserted(text: String) {
         cancelAutoHide()
         status = .inserted
+        transcript = text
         updateContent()
-        scheduleAutoHide(after: .seconds(1))
+        scheduleAutoHide(after: .seconds(1.5))
     }
 
     func showError(_ message: String) {
@@ -116,10 +124,10 @@ final class FloatingHUD: HUDProtocol {
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
         panel.hidesOnDeactivate = false
         panel.isMovableByWindowBackground = false
+        panel.acceptsMouseMovedEvents = true
+        panel.ignoresMouseEvents = false
 
-        let hosting = NSHostingView(rootView: FloatingHUDView(
-            status: status, transcript: transcript, audioLevel: audioLevel
-        ))
+        let hosting = NSHostingView(rootView: makeView())
         hosting.frame = panel.contentView!.bounds
         hosting.autoresizingMask = [.width, .height]
         panel.contentView?.addSubview(hosting)
@@ -129,15 +137,23 @@ final class FloatingHUD: HUDProtocol {
     }
 
     private func updateContent() {
-        hostingView?.rootView = FloatingHUDView(
-            status: status, transcript: transcript, audioLevel: audioLevel
-        )
+        hostingView?.rootView = makeView()
         guard let panel else { return }
         let w = calculateWidth()
         let frame = panel.frame
         panel.setFrame(
-            NSRect(x: frame.midX - w / 2, y: frame.origin.y, width: w, height: Layout.height),
+            NSRect(x: frame.midX - w / 2, y: frame.origin.y, width: w, height: DS.Panel.hudHeight),
             display: true
+        )
+    }
+
+    private func makeView() -> FloatingHUDView {
+        FloatingHUDView(
+            status: status,
+            transcript: transcript,
+            audioLevel: audioLevel,
+            shortcutLabel: shortcutLabel,
+            onTap: { [weak self] in self?.onTap?() }
         )
     }
 
@@ -146,22 +162,16 @@ final class FloatingHUD: HUDProtocol {
         let w = calculateWidth()
         let visibleFrame = screen.visibleFrame
         panel.setFrame(
-            NSRect(x: visibleFrame.midX - w / 2, y: visibleFrame.minY + Layout.bottomOffset, width: w, height: Layout.height),
+            NSRect(x: visibleFrame.midX - w / 2, y: visibleFrame.minY + DS.Panel.hudBottomOffset, width: w, height: DS.Panel.hudHeight),
             display: true
         )
     }
 
-    private enum Layout {
-        static let minWidth: CGFloat = 240
-        static let maxWidth: CGFloat = 620
-        static let charWidth: CGFloat = 10
-        static let maxDisplayChars = 80
-        static let height: CGFloat = 60
-        static let bottomOffset: CGFloat = 48
-    }
-
     private func calculateWidth() -> CGFloat {
-        let textWidth = CGFloat(transcript.prefix(Layout.maxDisplayChars).count) * Layout.charWidth
-        return min(Layout.maxWidth, max(Layout.minWidth, Layout.minWidth + textWidth))
+        let baseWidth: CGFloat = 260
+        let maxWidth: CGFloat = 500
+        let charCount = transcript.suffix(60).count
+        let textWidth = CGFloat(min(charCount, 20)) * 8
+        return min(maxWidth, baseWidth + textWidth)
     }
 }

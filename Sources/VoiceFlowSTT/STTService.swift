@@ -2,18 +2,20 @@ import Foundation
 import Speech
 import AVFAudio
 import Accelerate
-import os
 import VoiceFlowProtocol
-
-private let logger = Logger(subsystem: "com.hibachi.voiceflow.stt", category: "STTService")
 
 final class STTService: NSObject, STTServiceProtocol {
     private var recognizer: SFSpeechRecognizer?
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private let audioEngine = AVAudioEngine()
-    private var latestTranscript = ""
+
+    // All access to these 3 fields must be inside lock
+    private var confirmedText = ""
+    private var provisionalText = ""
+    private var stopped = false
     private let lock = NSLock()
+
     private weak var connection: NSXPCConnection?
     private var tapInstalled = false
 
@@ -26,15 +28,19 @@ final class STTService: NSObject, STTServiceProtocol {
     }
 
     func startRecording(locale localeID: String) {
-        logger.info("Starting recording with locale: \(localeID)")
         let locale = Locale(identifier: localeID)
         guard let recognizer = SFSpeechRecognizer(locale: locale),
               recognizer.isAvailable else {
-            logger.error("Speech recognizer unavailable for locale: \(localeID)")
             client?.didEncounterError("Speech recognizer is not available for \(localeID).")
             return
         }
         self.recognizer = recognizer
+
+        lock.lock()
+        confirmedText = ""
+        provisionalText = ""
+        stopped = false
+        lock.unlock()
 
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
@@ -46,26 +52,59 @@ final class STTService: NSObject, STTServiceProtocol {
         }
         self.recognitionRequest = request
 
-        let inputNode = audioEngine.inputNode
-        let recordingFormat = inputNode.outputFormat(forBus: 0)
-
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, _ in
-            request.append(buffer)
-            self?.processAudioLevel(buffer: buffer)
+        if !tapInstalled {
+            let inputNode = audioEngine.inputNode
+            let format = inputNode.outputFormat(forBus: 0)
+            inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
+                self?.recognitionRequest?.append(buffer)
+                self?.processAudioLevel(buffer: buffer)
+            }
+            tapInstalled = true
         }
-        tapInstalled = true
 
         recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
             guard let self else { return }
+
+            self.lock.lock()
+            guard !self.stopped else { self.lock.unlock(); return }
+
             if let result {
                 let text = result.bestTranscription.formattedString
-                self.lock.lock()
-                self.latestTranscript = text
+
+                // Detect segment reset: new text is much shorter than previous.
+                // Use max(provisionalText.count / 2, 1) to handle short texts too.
+                let threshold = max(self.provisionalText.count / 2, 1)
+                if !self.provisionalText.isEmpty && text.count < threshold {
+                    self.confirmedText = self.lockedFullTranscript
+                }
+                self.provisionalText = text
+                let display = self.lockedFullTranscript
                 self.lock.unlock()
-                self.client?.didUpdateTranscript(text)
+
+                self.client?.didUpdateTranscript(display)
+
+                if result.isFinal {
+                    self.lock.lock()
+                    self.confirmedText = self.lockedFullTranscript
+                    self.provisionalText = ""
+                    self.lock.unlock()
+                }
+                return
             }
+            self.lock.unlock()
+
             if let error {
-                self.client?.didEncounterError(error.localizedDescription)
+                let code = (error as NSError).code
+                if code == 216 || code == 203 || code == 1110 {
+                    self.lock.lock()
+                    if !self.provisionalText.isEmpty {
+                        self.confirmedText = self.lockedFullTranscript
+                        self.provisionalText = ""
+                    }
+                    self.lock.unlock()
+                } else {
+                    self.client?.didEncounterError(error.localizedDescription)
+                }
             }
         }
 
@@ -73,22 +112,26 @@ final class STTService: NSObject, STTServiceProtocol {
             audioEngine.prepare()
             try audioEngine.start()
         } catch {
-            logger.error("Audio engine failed to start: \(error.localizedDescription)")
             cleanup()
             client?.didEncounterError(error.localizedDescription)
         }
     }
 
     func stopRecording(reply: @escaping (String?) -> Void) {
-        logger.info("Stopping recording")
-        cleanup()
-
+        // Stop accepting callbacks immediately
         lock.lock()
-        let transcript = latestTranscript
-        latestTranscript = ""
+        stopped = true
+        let result = lockedFullTranscript
+        confirmedText = ""
+        provisionalText = ""
         lock.unlock()
 
-        reply(transcript.isEmpty ? nil : transcript)
+        // Clean up audio and recognition
+        recognitionRequest?.endAudio()
+        recognitionTask?.finish()
+        cleanup()
+
+        reply(result.isEmpty ? nil : result)
     }
 
     private func cleanup() {
@@ -97,11 +140,16 @@ final class STTService: NSObject, STTServiceProtocol {
             tapInstalled = false
         }
         audioEngine.stop()
-        recognitionRequest?.endAudio()
-        recognitionTask?.finish()
         recognitionRequest = nil
         recognitionTask = nil
         recognizer = nil
+    }
+
+    /// Must be called while lock is held.
+    private var lockedFullTranscript: String {
+        if confirmedText.isEmpty { return provisionalText }
+        if provisionalText.isEmpty { return confirmedText }
+        return confirmedText + " " + provisionalText
     }
 
     private func processAudioLevel(buffer: AVAudioPCMBuffer) {

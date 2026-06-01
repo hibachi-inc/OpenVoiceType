@@ -38,7 +38,8 @@ struct AccessibilityInjector: TextInjecting {
 
         usleep(Timing.postPasteDelay)
 
-        if pasteboard.changeCount == savedChangeCount + 1 {
+        // clearContents() +1, setString() +1 = savedChangeCount + 2
+        if pasteboard.changeCount == savedChangeCount + 2 {
             restorePasteboard(pasteboard, items: savedItems)
         }
 

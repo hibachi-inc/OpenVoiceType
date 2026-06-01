@@ -17,15 +17,19 @@ protocol RefinerClientProtocol {
     var onError: ((String) -> Void)? { get set }
 
     func refine(text: String, category: String) async -> (String, Bool)
+    #if PROFEATURES
+    func translate(text: String, targetLanguage: String) async -> (String, Bool)
+    #endif
     func disconnect()
 }
 
 @MainActor
 protocol HUDProtocol {
+    var onTap: (() -> Void)? { get set }
     func showListening()
     func showProcessing(transcript: String)
-    func showCopied()
-    func showInserted()
+    func showCopied(text: String)
+    func showInserted(text: String)
     func showError(_ message: String)
     func updateTranscript(_ text: String)
     func updateAudioLevel(_ level: Float)

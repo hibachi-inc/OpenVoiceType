@@ -4,37 +4,115 @@ struct FloatingHUDView: View {
     let status: HUDStatus
     let transcript: String
     let audioLevel: Float
+    var shortcutLabel: String = "⌥Space"
+    var onTap: (() -> Void)? = nil
+
+    private var displayTranscript: String {
+        String(transcript.suffix(80))
+    }
 
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: status.iconName)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(status.color)
-                .symbolEffect(.pulse, isActive: status == .listening)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(status.title)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.white)
-                if !transcript.isEmpty {
-                    Text(transcript.suffix(80))
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.9))
-                        .lineLimit(2)
+        VStack(spacing: DS.Spacing.xs) {
+            HStack(alignment: .top, spacing: DS.Spacing.sm) {
+                statusIndicator
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(status.title)
+                        .font(DS.Font.hudStatus)
+                        .foregroundStyle(.white.opacity(0.7))
+                    Text(displayTranscript.isEmpty ? " " : displayTranscript)
+                        .font(DS.Font.hudTranscript)
+                        .foregroundStyle(displayTranscript.isEmpty ? .clear : .white)
+                        .lineLimit(1)
+                        .truncationMode(.head)
                 }
             }
-            if status == .listening {
-                AudioMeterView(level: audioLevel)
-                    .frame(width: 40, height: 24)
+
+            if status == .listening || status == .processing {
+                ZStack {
+                    if status == .listening {
+                        WaveformView(level: audioLevel)
+                            .frame(width: 64, height: 14)
+                    }
+                    HStack {
+                        Spacer()
+                        Text("\(shortcutLabel) stop")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.3))
+                    }
+                }
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
-        .background(.ultraThinMaterial.opacity(0.9))
-        .background(status.color.opacity(0.3))
-        .clipShape(Capsule())
-        .shadow(color: .black.opacity(0.3), radius: 10, y: 4)
+        .padding(.horizontal, DS.Spacing.md)
+        .padding(.vertical, DS.Spacing.sm)
+        .background {
+            ZStack {
+                VisualEffectBackground(material: .hudWindow, blendingMode: .behindWindow)
+                status.color.opacity(0.12)
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous)
+                .strokeBorder(.white.opacity(0.15), lineWidth: 0.5)
+        }
+        .shadow(
+            color: DS.Shadow.hud.color,
+            radius: DS.Shadow.hud.radius,
+            y: DS.Shadow.hud.y
+        )
+        .contentShape(Rectangle())
+        .onTapGesture { onTap?() }
+        .animation(DS.Animation.content, value: status)
+        .animation(DS.Animation.content, value: transcript)
+    }
+
+    // MARK: - Status indicator
+
+    private var statusIndicator: some View {
+        ZStack {
+            Circle()
+                .fill(status.color.opacity(0.2))
+                .frame(width: 26, height: 26)
+
+            Image(systemName: status.iconName)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(status.color)
+                .symbolEffect(.pulse, isActive: status == .listening)
+                .contentTransition(.symbolEffect(.replace))
+        }
+    }
+
+}
+
+// MARK: - Waveform visualizer
+
+struct WaveformView: View {
+    let level: Float
+    private let barCount = 7
+    private let weights: [Float] = [0.4, 0.65, 0.85, 1.0, 0.85, 0.65, 0.4]
+
+    var body: some View {
+        HStack(spacing: 3) {
+            ForEach(0..<barCount, id: \.self) { i in
+                RoundedRectangle(cornerRadius: 1.5)
+                    .fill(.white.opacity(0.75))
+                    .frame(width: 3, height: barHeight(for: i))
+                    .animation(
+                        .spring(response: 0.15, dampingFraction: 0.6),
+                        value: level
+                    )
+            }
+        }
+    }
+
+    private func barHeight(for index: Int) -> CGFloat {
+        let weighted = level * weights[index]
+        return CGFloat(max(0.08, min(1.0, weighted))) * 24 + 3
     }
 }
+
+// MARK: - Status enum
 
 enum HUDStatus: Equatable {
     case listening
@@ -64,29 +142,10 @@ enum HUDStatus: Equatable {
 
     var color: Color {
         switch self {
-        case .listening: .red
-        case .processing: .orange
-        case .copied, .inserted: .green
-        case .error: .red
+        case .listening: DS.Colors.recording
+        case .processing: DS.Colors.processing
+        case .copied, .inserted: DS.Colors.success
+        case .error: DS.Colors.error
         }
-    }
-}
-
-struct AudioMeterView: View {
-    let level: Float
-    private let weights: [Float] = [0.5, 0.8, 1.0, 0.75, 0.55]
-
-    var body: some View {
-        HStack(spacing: 2) {
-            ForEach(0..<5, id: \.self) { i in
-                RoundedRectangle(cornerRadius: 1)
-                    .fill(.white.opacity(0.8))
-                    .frame(width: 3, height: barHeight(for: i))
-            }
-        }
-    }
-
-    private func barHeight(for index: Int) -> CGFloat {
-        CGFloat(max(0.1, min(1.0, level * weights[index]))) * 20 + 4
     }
 }

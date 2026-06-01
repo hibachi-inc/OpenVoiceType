@@ -7,6 +7,8 @@ struct VoiceFlowApp {
         let delegate = AppDelegate()
         app.setActivationPolicy(.accessory)
         app.delegate = delegate
+        // app.run() never returns, so delegate stays on the stack
+        // and the weak NSApplication.delegate reference remains valid.
         app.run()
     }
 }

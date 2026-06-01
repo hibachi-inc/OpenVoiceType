@@ -73,4 +73,24 @@ struct AppContextTests {
         let ctx = AppContext.forTesting(appName: "Finder", bundleID: "com.apple.finder")
         #expect(ctx.category == .generic)
     }
+
+    @Test func nilBundleIDFallsBackToAppName() {
+        let ctx = AppContext.forTesting(appName: "Slack", bundleID: nil)
+        #expect(ctx.category == .chat)
+    }
+
+    @Test func ghosttyIsTerminal() {
+        let ctx = AppContext.forTesting(appName: "Ghostty", bundleID: "com.mitchellh.ghostty")
+        #expect(ctx.category == .terminal)
+    }
+
+    @Test func lineIsChat() {
+        let ctx = AppContext.forTesting(appName: "LINE", bundleID: "jp.naver.line.mac")
+        #expect(ctx.category == .chat)
+    }
+
+    @Test func emailPriorityOverGeneric() {
+        let ctx = AppContext.forTesting(appName: "Airmail", bundleID: "it.bloop.airmail2")
+        #expect(ctx.category == .email)
+    }
 }

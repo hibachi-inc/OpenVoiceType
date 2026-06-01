@@ -5,6 +5,9 @@ import PackageDescription
 let package = Package(
     name: "VoiceFlow",
     platforms: [.macOS(.v14)],
+    products: [
+        .library(name: "VoiceFlowProtocol", targets: ["VoiceFlowProtocol"]),
+    ],
     targets: [
         .target(
             name: "VoiceFlowProtocol",
@@ -27,7 +30,7 @@ let package = Package(
         ),
         .testTarget(
             name: "VoiceFlowTests",
-            dependencies: ["VoiceFlowApp"],
+            dependencies: ["VoiceFlowApp", "VoiceFlowRefiner"],
             path: "Tests/VoiceFlowTests"
         ),
     ]

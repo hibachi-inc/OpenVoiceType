@@ -183,4 +183,72 @@ struct RecordingStateMachineTests {
         let idle = sm.transition(.refinementDone)
         #expect(idle == .idle)
     }
+
+    // MARK: - No-op on invalid events in terminal states
+
+    @Test func errorStateIgnoresStartRequested() {
+        let sm = RecordingStateMachine()
+        sm.transition(.startRequested)
+        sm.transition(.micReady)
+        sm.transition(.failed("test"))
+
+        let still = sm.transition(.startRequested)
+        guard case .error = still else {
+            Issue.record("Expected .error, got \(still)")
+            return
+        }
+    }
+
+    @Test func cancelledStateIgnoresStartRequested() {
+        let sm = RecordingStateMachine()
+        sm.transition(.startRequested)
+        sm.transition(.cancel)
+
+        let still = sm.transition(.startRequested)
+        guard case .cancelled = still else {
+            Issue.record("Expected .cancelled, got \(still)")
+            return
+        }
+    }
+
+    @Test func recordingIgnoresDuplicateMicReady() {
+        let sm = RecordingStateMachine()
+        sm.transition(.startRequested)
+        let recording = sm.transition(.micReady)
+        let id = recording.sessionID
+
+        let still = sm.transition(.micReady)
+        #expect(still == recording)
+        #expect(still.sessionID == id)
+    }
+
+    @Test func processingIgnoresDuplicateStopRequested() {
+        let sm = RecordingStateMachine()
+        sm.transition(.startRequested)
+        sm.transition(.micReady)
+        let processing = sm.transition(.stopRequested)
+
+        let still = sm.transition(.stopRequested)
+        #expect(still == processing)
+    }
+
+    @Test func cancelledPreservesSessionID() {
+        let sm = RecordingStateMachine()
+        sm.transition(.startRequested)
+        let recording = sm.transition(.micReady)
+        let id = recording.sessionID
+
+        let cancelled = sm.transition(.cancel)
+        #expect(cancelled.sessionID == id)
+    }
+
+    @Test func errorPreservesSessionID() {
+        let sm = RecordingStateMachine()
+        sm.transition(.startRequested)
+        let recording = sm.transition(.micReady)
+        let id = recording.sessionID
+
+        let error = sm.transition(.failed("test"))
+        #expect(error.sessionID == id)
+    }
 }

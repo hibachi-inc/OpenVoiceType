@@ -72,6 +72,29 @@ final class RefinerXPCClient: RefinerClientProtocol {
         return result
     }
 
+    #if PROFEATURES
+    func translate(text: String, targetLanguage: String) async -> (String, Bool) {
+        logger.info("Translating text to \(targetLanguage)")
+        nonisolated(unsafe) let svc = self.service
+        let result: (String, Bool) = await withXPCTimeout(
+            seconds: timeoutSeconds,
+            fallback: (text, true)
+        ) { resume in
+            guard let svc else {
+                resume((text, true))
+                return
+            }
+            svc.translate(text: text, targetLanguage: targetLanguage) { translated in
+                resume((translated ?? text, false))
+            }
+        }
+        if result.1 {
+            logger.warning("Translation timed out, returning raw text")
+        }
+        return result
+    }
+    #endif
+
     func disconnect() {
         connectionValid = false
         connection?.invalidate()
