@@ -142,6 +142,17 @@
 "pro.upgrade %@" = "%@ でアップグレード";
 "pro.loading" = "読み込み中...";
 "pro.restore" = "購入を復元";
+"pro.enter_license" = "ライセンスキー";
+"pro.enter_license.placeholder" = "KOERI_XXXX-XXXX-XXXX-XXXX";
+"pro.activate" = "アクティベート";
+"pro.deactivate" = "ライセンスを解除";
+"pro.buy_license" = "ライセンスを購入";
+"pro.activated" = "Pro アクティブ";
+"pro.invalid_key" = "無効なライセンスキーです。";
+"pro.validating" = "検証中...";
+"pro.network_error" = "ネットワークエラー。もう一度お試しください。";
+"pro.upgrade_hint_refine" = "Proにアップグレードすると AI整形が有効になります。";
+"pro.upgrade_hint_translate" = "Proにアップグレードすると翻訳機能が有効になります。";
 "pro.ai_refinement_active" = "AI 整形";
 "pro.translation_active" = "翻訳";
 

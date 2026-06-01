@@ -5,8 +5,18 @@ struct TranslationSettingsView: View {
     @State private var prefs = PreferencesStore.shared
     @State private var showingAddSheet = false
 
+    private var isLocked: Bool { !ProUpgradeManager.shared.isPro }
+
     var body: some View {
         Form {
+            if isLocked {
+                Section {
+                    Label("pro.upgrade_hint_translate", systemImage: "lock.fill")
+                        .font(DS.Font.caption)
+                        .foregroundStyle(DS.Colors.accent)
+                }
+            }
+
             Section("translation.enabled") {
                 if prefs.translationLanguages.isEmpty {
                     Text("translation.empty")
@@ -49,10 +59,13 @@ struct TranslationSettingsView: View {
                                     .foregroundStyle(.red)
                             }
                             .buttonStyle(.plain)
+                            .disabled(isLocked)
                         }
+                        .disabled(isLocked)
                     }
                 }
                 Button("translation.add") { showingAddSheet = true }
+                    .disabled(isLocked)
             }
 
             Section("translation.how_it_works") {

@@ -87,6 +87,14 @@ struct GeneralSettingsView: View {
                 Text(prefs.refinementMode.description)
                     .font(DS.Font.caption)
                     .foregroundStyle(DS.Colors.secondary)
+
+                #if PROFEATURES
+                if prefs.refinementMode == .refine && !ProUpgradeManager.shared.isPro {
+                    Label("pro.upgrade_hint_refine", systemImage: "lock.fill")
+                        .font(DS.Font.caption)
+                        .foregroundStyle(DS.Colors.accent)
+                }
+                #endif
             }
 
             Section("refinement.default_prompt") {

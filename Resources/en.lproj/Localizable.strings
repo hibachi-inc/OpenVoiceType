@@ -142,6 +142,17 @@
 "pro.upgrade %@" = "Upgrade for %@";
 "pro.loading" = "Loading...";
 "pro.restore" = "Restore Purchases";
+"pro.enter_license" = "License Key";
+"pro.enter_license.placeholder" = "KOERI_XXXX-XXXX-XXXX-XXXX";
+"pro.activate" = "Activate";
+"pro.deactivate" = "Deactivate License";
+"pro.buy_license" = "Buy License";
+"pro.activated" = "Pro Active";
+"pro.invalid_key" = "Invalid license key.";
+"pro.validating" = "Validating...";
+"pro.network_error" = "Network error. Please try again.";
+"pro.upgrade_hint_refine" = "Upgrade to Pro to enable AI refinement.";
+"pro.upgrade_hint_translate" = "Upgrade to Pro to enable translation.";
 "pro.ai_refinement_active" = "AI Refinement";
 "pro.translation_active" = "Translation";
 
