@@ -132,6 +132,7 @@ struct HistoryCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+            #if PROFEATURES
             HStack {
                 Text(entry.appName)
                     .font(DS.Font.caption)
@@ -160,6 +161,7 @@ struct HistoryCard: View {
                 .buttonStyle(.plain)
                 .help(String(localized: "history.copy"))
             }
+            #endif
 
             Text(entry.refinedText)
                 .font(DS.Font.body)
@@ -171,6 +173,25 @@ struct HistoryCard: View {
                     .foregroundStyle(DS.Colors.secondary)
                     .lineLimit(1)
             }
+
+            #if !PROFEATURES
+            HStack {
+                Text(relativeTime(entry.timestamp))
+                    .font(DS.Font.caption)
+                    .foregroundStyle(DS.Colors.secondary)
+
+                Spacer()
+
+                Button(action: copyText) {
+                    Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                        .font(.system(size: 12))
+                        .foregroundStyle(copied ? .green : DS.Colors.secondary)
+                        .contentTransition(.symbolEffect(.replace))
+                }
+                .buttonStyle(.plain)
+                .help(String(localized: "history.copy"))
+            }
+            #endif
         }
         .padding(DS.Spacing.md)
         .background(.background.secondary)

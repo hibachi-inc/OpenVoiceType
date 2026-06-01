@@ -53,14 +53,48 @@
 "general.app_language.ja" = "日本語";
 "general.app_language_restart" = "The app will restart to apply the language change.";
 "general.restart_app" = "Restart App";
+"general.permissions" = "Permissions";
+"general.permission.microphone" = "Microphone";
+"general.permission.speech" = "Speech Recognition";
+"general.permission.accessibility" = "Accessibility";
+"general.permission.accessibility_desc" = "Required for auto-paste at cursor position.";
+"general.permission.granted" = "Granted";
+"general.permission.not_granted" = "Not Granted";
+"general.permission.open_settings" = "Open Settings";
+
+/* Output Method */
+"general.output_method" = "Output Method";
+"general.output_method.direct" = "Insert at cursor";
+"general.output_method.clipboard" = "Copy to clipboard";
+"general.output_method.direct_desc" = "Auto-paste text at cursor position using accessibility.";
+"general.output_method.clipboard_desc" = "Copy text to clipboard. Press ⌘V to paste wherever you like.";
 
 /* Refinement Mode */
 "refinement.off" = "Off (raw transcript)";
 "refinement.off_desc" = "Insert speech-to-text output as-is";
-"refinement.refine" = "Basic cleanup (filler removal)";
-"refinement.refine_desc" = "Remove filler words and normalize whitespace";
+"refinement.refine" = "AI Refinement (Apple Intelligence)";
+"refinement.refine_desc" = "Refine text with Apple Intelligence. Falls back to filler removal on macOS 15 and earlier.";
 "refinement.refine_pro" = "AI Refinement";
 "refinement.refine_pro_desc" = "Clean up with Apple Intelligence based on active app";
+
+/* App Prompts */
+"refinement.default_prompt" = "Default Instruction";
+"refinement.default_prompt_desc" = "This instruction is applied when AI refinement is enabled.";
+"refinement.default_prompt_desc_pro" = "Applied to all apps unless overridden by a per-app instruction below.";
+"refinement.default_prompt.placeholder" = "e.g. Always use polite language";
+"refinement.suggestion.correct" = "Correct";
+"refinement.suggestion.correct_prompt" = "Fix misrecognitions from voice input and correct to proper words";
+"refinement.suggestion.translate" = "Translate";
+"refinement.suggestion.translate_prompt" = "Translate to Japanese";
+"refinement.suggestion.emoji" = "Decorate";
+"refinement.suggestion.emoji_prompt" = "Decorate with emojis";
+
+"refinement.app_prompts" = "Per-App Refinement";
+"refinement.app_prompts_desc" = "Customize how text is refined for each app. Overrides the default instruction above.";
+"refinement.app_prompt.select_app" = "Select app";
+"refinement.app_prompt.placeholder" = "e.g. Use casual tone, keep technical terms as-is";
+"refinement.app_prompt.delete" = "Delete";
+"refinement.app_prompt.no_history" = "Use voice input in some apps first — they'll appear here.";
 
 /* Hotkey Settings */
 "hotkey.recording" = "Recording";

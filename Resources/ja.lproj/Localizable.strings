@@ -53,14 +53,48 @@
 "general.app_language.ja" = "日本語";
 "general.app_language_restart" = "言語の変更を反映するためにアプリを再起動します。";
 "general.restart_app" = "アプリを再起動";
+"general.permissions" = "権限";
+"general.permission.microphone" = "マイク";
+"general.permission.speech" = "音声認識";
+"general.permission.accessibility" = "アクセシビリティ";
+"general.permission.accessibility_desc" = "カーソル位置への自動ペーストに必要です。";
+"general.permission.granted" = "許可済み";
+"general.permission.not_granted" = "未許可";
+"general.permission.open_settings" = "設定を開く";
+
+/* Output Method */
+"general.output_method" = "出力方法";
+"general.output_method.direct" = "カーソル位置に直接挿入";
+"general.output_method.clipboard" = "クリップボードにコピー";
+"general.output_method.direct_desc" = "アクセシビリティ権限を使い、カーソル位置にテキストを自動ペーストします。";
+"general.output_method.clipboard_desc" = "テキストをクリップボードにコピーします。⌘V で任意の場所にペーストできます。";
 
 /* Refinement Mode */
 "refinement.off" = "オフ (生テキスト)";
 "refinement.off_desc" = "音声認識の結果をそのまま入力";
-"refinement.refine" = "基本整形 (フィラー除去)";
-"refinement.refine_desc" = "フィラーワードの除去と空白の正規化";
+"refinement.refine" = "AI 整形（Apple Intelligence）";
+"refinement.refine_desc" = "Apple Intelligence でテキストを整形。macOS 15以前ではフィラー除去にフォールバック。";
 "refinement.refine_pro" = "AI 整形";
 "refinement.refine_pro_desc" = "アクティブなアプリに合わせて Apple Intelligence で整形";
+
+/* App Prompts */
+"refinement.default_prompt" = "デフォルト指示";
+"refinement.default_prompt_desc" = "AI 整形時にこの指示が適用されます。";
+"refinement.default_prompt_desc_pro" = "アプリ別の指示がない場合に適用されます。";
+"refinement.default_prompt.placeholder" = "例: 常に丁寧語を使う";
+"refinement.suggestion.correct" = "補正";
+"refinement.suggestion.correct_prompt" = "音声入力のため意味を汲み取って正しい言葉に修正して";
+"refinement.suggestion.translate" = "翻訳";
+"refinement.suggestion.translate_prompt" = "英語に翻訳して";
+"refinement.suggestion.emoji" = "装飾";
+"refinement.suggestion.emoji_prompt" = "絵文字で装飾して";
+
+"refinement.app_prompts" = "アプリ別の整形";
+"refinement.app_prompts_desc" = "アプリごとにテキスト整形の指示をカスタマイズできます。上のデフォルト指示より優先されます。";
+"refinement.app_prompt.select_app" = "アプリを選択";
+"refinement.app_prompt.placeholder" = "例: カジュアルな口調で、技術用語はそのまま残す";
+"refinement.app_prompt.delete" = "削除";
+"refinement.app_prompt.no_history" = "まずいくつかのアプリで音声入力を使ってください。使用したアプリがここに表示されます。";
 
 /* Hotkey Settings */
 "hotkey.recording" = "録音";

@@ -44,14 +44,14 @@ final class MockRefinerClient: RefinerClientProtocol {
     var onError: ((String) -> Void)?
 
     var lastText: String?
-    var lastCategory: String?
+    var lastContext: [String: String]?
     var refinedToReturn: String = "Refined text"
     var shouldTimeout = false
     var disconnected = false
 
-    func refine(text: String, category: String) async -> (String, Bool) {
+    func refine(text: String, context: [String: String]) async -> (String, Bool) {
         lastText = text
-        lastCategory = category
+        lastContext = context
         return (shouldTimeout ? text : refinedToReturn, shouldTimeout)
     }
 
@@ -104,25 +104,32 @@ final class MockInjector: @preconcurrency TextInjecting {
 @Suite("RecordingCoordinator")
 struct RecordingCoordinatorTests {
 
-    private func makeCoordinator() -> (RecordingCoordinator, MockSTTClient, MockRefinerClient, MockHUD, MockInjector) {
+    private func makeCoordinator(
+        directInjector: MockInjector? = nil,
+        clipboardInjector: MockInjector? = nil
+    ) -> (RecordingCoordinator, MockSTTClient, MockRefinerClient, MockHUD, MockInjector, MockInjector) {
         let stt = MockSTTClient()
         let refiner = MockRefinerClient()
         let hud = MockHUD()
-        let injector = MockInjector()
+        let shared = MockInjector()
+        let direct = directInjector ?? shared
+        let clipboard = clipboardInjector ?? shared
         let coordinator = RecordingCoordinator(
             sttClient: stt,
             refinerClient: refiner,
             hud: hud,
-            injector: injector
+            directInjector: direct,
+            clipboardInjector: clipboard,
+            skipPermissionCheck: true
         )
         coordinator.setup()
-        return (coordinator, stt, refiner, hud, injector)
+        return (coordinator, stt, refiner, hud, direct, clipboard)
     }
 
     // MARK: - Start/Stop flow
 
     @Test func startRecordingShowsHUD() async {
-        let (coordinator, stt, _, hud, _) = makeCoordinator()
+        let (coordinator, stt, _, hud, _, _) = makeCoordinator()
 
         coordinator.toggle()
 
@@ -132,7 +139,7 @@ struct RecordingCoordinatorTests {
     }
 
     @Test func fullRecordingFlowInjectsRefinedText() async {
-        let (coordinator, stt, refiner, hud, injector) = makeCoordinator()
+        let (coordinator, stt, refiner, hud, injector, _) = makeCoordinator()
         stt.transcriptToReturn = "Hello world"
         refiner.refinedToReturn = "Hello, world."
 
@@ -152,7 +159,7 @@ struct RecordingCoordinatorTests {
     }
 
     @Test func emptyTranscriptSkipsRefinerAndHides() async {
-        let (coordinator, stt, refiner, hud, injector) = makeCoordinator()
+        let (coordinator, stt, refiner, hud, injector, _) = makeCoordinator()
         stt.transcriptToReturn = nil
 
         coordinator.toggle() // start
@@ -167,7 +174,7 @@ struct RecordingCoordinatorTests {
     // MARK: - Refiner timeout
 
     @Test func refinerTimeoutShowsError() async {
-        let (coordinator, stt, refiner, hud, injector) = makeCoordinator()
+        let (coordinator, stt, refiner, hud, injector, _) = makeCoordinator()
         stt.transcriptToReturn = "Test input"
         refiner.shouldTimeout = true
 
@@ -182,7 +189,7 @@ struct RecordingCoordinatorTests {
     // MARK: - Cancel
 
     @Test func cancelDuringProcessingResetsToIdle() async {
-        let (coordinator, stt, _, hud, injector) = makeCoordinator()
+        let (coordinator, stt, _, hud, injector, _) = makeCoordinator()
         stt.transcriptToReturn = "Hello"
         stt.stopDelay = .milliseconds(500)
 
@@ -205,7 +212,7 @@ struct RecordingCoordinatorTests {
     }
 
     @Test func cancelResetsToIdleAndAllowsNewSession() async {
-        let (coordinator, stt, refiner, _, injector) = makeCoordinator()
+        let (coordinator, stt, refiner, _, injector, _) = makeCoordinator()
         stt.transcriptToReturn = "First"
         stt.stopDelay = .milliseconds(300)
 
@@ -233,7 +240,7 @@ struct RecordingCoordinatorTests {
     }
 
     @Test func safetyTimerForcesResetWhenCancelHangs() async {
-        let (coordinator, stt, _, hud, _) = makeCoordinator()
+        let (coordinator, stt, _, hud, _, _) = makeCoordinator()
         stt.transcriptToReturn = "Hello"
         stt.stopDelay = .seconds(10) // Simulate hung XPC
 
@@ -250,7 +257,7 @@ struct RecordingCoordinatorTests {
     }
 
     @Test func disconnectDuringCancelCleansUp() async {
-        let (coordinator, stt, _, _, _) = makeCoordinator()
+        let (coordinator, stt, _, _, _, _) = makeCoordinator()
         stt.transcriptToReturn = "Hello"
         stt.stopDelay = .milliseconds(500)
 
@@ -266,7 +273,7 @@ struct RecordingCoordinatorTests {
     // MARK: - Disconnect
 
     @Test func disconnectInvalidatesBothClients() {
-        let (coordinator, stt, refiner, _, _) = makeCoordinator()
+        let (coordinator, stt, refiner, _, _, _) = makeCoordinator()
 
         coordinator.disconnect()
 
@@ -276,7 +283,7 @@ struct RecordingCoordinatorTests {
     }
 
     @Test func disconnectDuringRecordingResetsState() async {
-        let (coordinator, stt, refiner, _, _) = makeCoordinator()
+        let (coordinator, stt, refiner, _, _, _) = makeCoordinator()
 
         coordinator.toggle() // start → recording
         #expect(coordinator.isRecording)
@@ -291,7 +298,7 @@ struct RecordingCoordinatorTests {
     // MARK: - Error handling
 
     @Test func sttErrorDuringRecordingShowsError() async {
-        let (coordinator, stt, _, hud, _) = makeCoordinator()
+        let (coordinator, stt, _, hud, _, _) = makeCoordinator()
 
         coordinator.toggle() // start → recording
         #expect(coordinator.isRecording)
@@ -304,7 +311,7 @@ struct RecordingCoordinatorTests {
     }
 
     @Test func errorWhileIdleIsIgnored() async {
-        let (coordinator, stt, _, hud, _) = makeCoordinator()
+        let (coordinator, stt, _, hud, _, _) = makeCoordinator()
 
         #expect(!coordinator.isRecording)
         stt.onError?("Stale error")
@@ -315,7 +322,7 @@ struct RecordingCoordinatorTests {
     // MARK: - State change callback
 
     @Test func onStateChangedFiresDuringToggle() {
-        let (coordinator, _, _, _, _) = makeCoordinator()
+        let (coordinator, _, _, _, _, _) = makeCoordinator()
         var callCount = 0
         coordinator.onStateChanged = { callCount += 1 }
 
@@ -326,7 +333,7 @@ struct RecordingCoordinatorTests {
     // MARK: - Engine change
 
     @Test func engineChangedUpdatesActiveEngine() {
-        let (coordinator, stt, _, hud, _) = makeCoordinator()
+        let (coordinator, stt, _, hud, _, _) = makeCoordinator()
         coordinator.toggle()
         stt.onEngineChanged?("enhanced")
         #expect(coordinator.activeEngine == "enhanced")
@@ -334,7 +341,7 @@ struct RecordingCoordinatorTests {
     }
 
     @Test func engineChangedWhileIdleStillUpdates() {
-        let (coordinator, stt, _, hud, _) = makeCoordinator()
+        let (coordinator, stt, _, hud, _, _) = makeCoordinator()
         stt.onEngineChanged?("classic")
         #expect(coordinator.activeEngine == "classic")
         #expect(hud.states.contains("engine:classic"))
@@ -343,7 +350,7 @@ struct RecordingCoordinatorTests {
     // MARK: - Permission error
 
     @Test func showPermissionErrorDelegatesToHUD() {
-        let (coordinator, _, _, hud, _) = makeCoordinator()
+        let (coordinator, _, _, hud, _, _) = makeCoordinator()
 
         coordinator.showPermissionError("Mic permission denied")
 
@@ -353,7 +360,7 @@ struct RecordingCoordinatorTests {
     // MARK: - Empty string transcript
 
     @Test func emptyStringTranscriptSkipsRefiner() async {
-        let (coordinator, stt, refiner, hud, injector) = makeCoordinator()
+        let (coordinator, stt, refiner, hud, injector, _) = makeCoordinator()
         stt.transcriptToReturn = ""
 
         coordinator.toggle()
@@ -368,7 +375,7 @@ struct RecordingCoordinatorTests {
     // MARK: - Connection invalidated
 
     @Test func connectionInvalidatedDuringRecording() async {
-        let (coordinator, stt, _, hud, _) = makeCoordinator()
+        let (coordinator, stt, _, hud, _, _) = makeCoordinator()
 
         coordinator.toggle()
         #expect(coordinator.isRecording)
@@ -381,7 +388,7 @@ struct RecordingCoordinatorTests {
     }
 
     @Test func enhancedCrashFallsBackToClassic() async {
-        let (coordinator, stt, _, hud, _) = makeCoordinator()
+        let (coordinator, stt, _, hud, _, _) = makeCoordinator()
 
         coordinator.toggle()
         #expect(stt.startCallCount == 1)
@@ -397,7 +404,7 @@ struct RecordingCoordinatorTests {
     }
 
     @Test func classicCrashShowsError() async {
-        let (coordinator, stt, _, hud, _) = makeCoordinator()
+        let (coordinator, stt, _, hud, _, _) = makeCoordinator()
 
         coordinator.toggle()
         stt.onEngineChanged?("classic")
@@ -409,7 +416,7 @@ struct RecordingCoordinatorTests {
     }
 
     @Test func enhancedCrashRetryOnlyOnce() async {
-        let (coordinator, stt, _, hud, _) = makeCoordinator()
+        let (coordinator, stt, _, hud, _, _) = makeCoordinator()
 
         coordinator.toggle()
         stt.onEngineChanged?("enhanced")
@@ -428,7 +435,7 @@ struct RecordingCoordinatorTests {
     // MARK: - Consecutive sessions
 
     @Test func secondSessionWorksAfterFirst() async {
-        let (coordinator, stt, refiner, _, injector) = makeCoordinator()
+        let (coordinator, stt, refiner, _, injector, _) = makeCoordinator()
         stt.transcriptToReturn = "First"
         refiner.refinedToReturn = "First refined"
 
@@ -454,7 +461,7 @@ struct RecordingCoordinatorTests {
     }
 
     @Test func secondSessionWorksWithSlowStop() async {
-        let (coordinator, stt, refiner, _, injector) = makeCoordinator()
+        let (coordinator, stt, refiner, _, injector, _) = makeCoordinator()
         stt.transcriptToReturn = "First"
         stt.stopDelay = .milliseconds(200)
         refiner.refinedToReturn = "First refined"
@@ -480,7 +487,7 @@ struct RecordingCoordinatorTests {
     }
 
     @Test func threeConsecutiveSessionsAllWork() async {
-        let (coordinator, stt, refiner, _, injector) = makeCoordinator()
+        let (coordinator, stt, refiner, _, injector, _) = makeCoordinator()
         stt.stopDelay = .milliseconds(100)
 
         for i in 1...3 {
@@ -499,7 +506,7 @@ struct RecordingCoordinatorTests {
     }
 
     @Test func connectionInvalidatedWhileIdleIgnored() {
-        let (coordinator, stt, _, hud, _) = makeCoordinator()
+        let (coordinator, stt, _, hud, _, _) = makeCoordinator()
 
         stt.onConnectionInvalidated?()
 
@@ -509,7 +516,7 @@ struct RecordingCoordinatorTests {
     // MARK: - State change on stop
 
     @Test func onStateChangedFiresDuringStop() async {
-        let (coordinator, _, _, _, _) = makeCoordinator()
+        let (coordinator, _, _, _, _, _) = makeCoordinator()
         var callCount = 0
         coordinator.onStateChanged = { callCount += 1 }
 
@@ -522,7 +529,7 @@ struct RecordingCoordinatorTests {
     }
 
     @Test func onStateChangedFiresOnError() async {
-        let (coordinator, stt, _, _, _) = makeCoordinator()
+        let (coordinator, stt, _, _, _, _) = makeCoordinator()
         var callCount = 0
         coordinator.onStateChanged = { callCount += 1 }
 
@@ -532,5 +539,51 @@ struct RecordingCoordinatorTests {
         try? await Task.sleep(for: .milliseconds(50))
 
         #expect(callCount > beforeError)
+    }
+
+    // MARK: - Output method switching
+
+    @Test func clipboardModeUsesClipboardInjector() async {
+        let direct = MockInjector()
+        let clipboard = MockInjector()
+        let (coordinator, stt, refiner, _, _, _) = makeCoordinator(
+            directInjector: direct, clipboardInjector: clipboard
+        )
+        PreferencesStore.shared.useDirectPaste = false
+        defer { PreferencesStore.shared.useDirectPaste = true }
+
+        stt.transcriptToReturn = "Test"
+        refiner.refinedToReturn = "Refined"
+
+        coordinator.toggle()
+        coordinator.toggle()
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #expect(clipboard.injectedText == "Refined")
+        #expect(direct.injectedText == nil)
+    }
+
+    @Test func directModeUsesDirectInjector() async {
+        let direct = MockInjector()
+        let clipboard = MockInjector()
+        let (coordinator, stt, refiner, _, _, _) = makeCoordinator(
+            directInjector: direct, clipboardInjector: clipboard
+        )
+        PreferencesStore.shared.useDirectPaste = true
+
+        stt.transcriptToReturn = "Test"
+        refiner.refinedToReturn = "Refined"
+
+        coordinator.toggle()
+        coordinator.toggle()
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #if DIRECT
+        #expect(direct.injectedText == "Refined")
+        #expect(clipboard.injectedText == nil)
+        #else
+        // Non-DIRECT builds: directInjector falls back to clipboardInjector in init
+        #expect(clipboard.injectedText == "Refined")
+        #endif
     }
 }

@@ -34,6 +34,20 @@ final class PreferencesStore {
         }
     }
 
+    var defaultPrompt: String {
+        didSet { defaults.set(defaultPrompt, forKey: "defaultPrompt") }
+    }
+
+    #if PROFEATURES
+    var appPrompts: [String: String] {
+        didSet { defaults.set(appPrompts, forKey: "appPrompts") }
+    }
+    #endif
+
+    var useDirectPaste: Bool {
+        didSet { defaults.set(useDirectPaste, forKey: "useDirectPaste") }
+    }
+
     #if PROFEATURES
     var translationLanguages: [TranslationLanguage] {
         didSet { saveTranslationLanguages() }
@@ -54,6 +68,15 @@ final class PreferencesStore {
         } else {
             appLanguage = "system"
         }
+        defaultPrompt = defaults.string(forKey: "defaultPrompt") ?? ""
+        #if PROFEATURES
+        appPrompts = (defaults.dictionary(forKey: "appPrompts") as? [String: String]) ?? [:]
+        #endif
+        #if DIRECT
+        useDirectPaste = defaults.object(forKey: "useDirectPaste") as? Bool ?? true
+        #else
+        useDirectPaste = false
+        #endif
         #if PROFEATURES
         translationLanguages = Self.loadTranslationLanguages(from: defaults)
         #endif

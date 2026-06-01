@@ -51,8 +51,8 @@ final class RefinerXPCClient: RefinerClientProtocol {
     }
 
     /// Returns (refinedText, didTimeout).
-    func refine(text: String, category: String) async -> (String, Bool) {
-        logger.info("Refining text (category: \(category), timeout: \(self.timeoutSeconds)s)")
+    func refine(text: String, context: [String: String]) async -> (String, Bool) {
+        logger.info("Refining text (context: \(context), timeout: \(self.timeoutSeconds)s)")
         nonisolated(unsafe) let svc = self.service
         let result: (String, Bool) = await withXPCTimeout(
             seconds: timeoutSeconds,
@@ -62,7 +62,7 @@ final class RefinerXPCClient: RefinerClientProtocol {
                 resume((text, true))
                 return
             }
-            svc.refine(text: text, category: category) { refined in
+            svc.refine(text: text, context: context) { refined in
                 resume((refined ?? text, false))
             }
         }

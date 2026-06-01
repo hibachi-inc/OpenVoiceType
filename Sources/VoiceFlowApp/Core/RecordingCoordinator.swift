@@ -1,6 +1,7 @@
 import Foundation
 import Speech
 import AVFoundation
+import VoiceFlowProtocol
 
 @MainActor
 @Observable
@@ -9,7 +10,8 @@ final class RecordingCoordinator {
     private var sttClient: STTClientProtocol_App
     private var refinerClient: RefinerClientProtocol
     private var hud: HUDProtocol
-    private let injector: TextInjecting
+    private let directInjector: TextInjecting
+    private let clipboardInjector: TextInjecting
     private let prefs: PreferencesStore
     private let history: HistoryStore
 
@@ -29,6 +31,8 @@ final class RecordingCoordinator {
     private(set) var currentTranscript: String = ""
     private(set) var activeEngine: String = ""
     private var enhancedCrashed = false
+    private var intentionalDisconnect = false
+    private let skipPermissionCheck: Bool
 
     private func syncState() {
         isRecording = session.state.isActive
@@ -39,9 +43,11 @@ final class RecordingCoordinator {
         sttClient: STTClientProtocol_App = STTXPCClient(),
         refinerClient: RefinerClientProtocol = RefinerXPCClient(),
         hud: HUDProtocol = FloatingHUD(),
-        injector: TextInjecting? = nil,
+        directInjector: TextInjecting? = nil,
+        clipboardInjector: TextInjecting? = nil,
         prefs: PreferencesStore = .shared,
-        history: HistoryStore = .shared
+        history: HistoryStore = .shared,
+        skipPermissionCheck: Bool = false
     ) {
         self.session = session
         self.sttClient = sttClient
@@ -49,10 +55,12 @@ final class RecordingCoordinator {
         self.hud = hud
         self.prefs = prefs
         self.history = history
+        self.skipPermissionCheck = skipPermissionCheck
+        self.clipboardInjector = clipboardInjector ?? ClipboardInjector()
         #if DIRECT
-        self.injector = injector ?? AccessibilityInjector()
+        self.directInjector = directInjector ?? AccessibilityInjector()
         #else
-        self.injector = injector ?? ClipboardInjector()
+        self.directInjector = self.clipboardInjector
         #endif
     }
 
@@ -76,6 +84,10 @@ final class RecordingCoordinator {
         }
         sttClient.onConnectionInvalidated = { [weak self] in
             guard let self else { return }
+            if self.intentionalDisconnect {
+                self.intentionalDisconnect = false
+                return
+            }
             if self.activeEngine == "enhanced" && !self.enhancedCrashed {
                 self.enhancedCrashed = true
                 FileLogger.log("Enhanced engine crashed XPC, retrying with classic after delay")
@@ -143,6 +155,7 @@ final class RecordingCoordinator {
         fallbackTask?.cancel()
         fallbackTask = nil
         session.forceReset()
+        intentionalDisconnect = true
         sttClient.disconnect()
         refinerClient.disconnect()
     }
@@ -154,6 +167,7 @@ final class RecordingCoordinator {
     // MARK: - Permissions
 
     private func ensurePermissions() -> Bool {
+        if skipPermissionCheck { return true }
         let speechStatus = SFSpeechRecognizer.authorizationStatus()
         let micStatus = AVCaptureDevice.authorizationStatus(for: .audio)
 
@@ -228,12 +242,34 @@ final class RecordingCoordinator {
             if rawTranscript.isEmpty {
                 session.transition(.refinementDone)
                 hud.hide()
+                intentionalDisconnect = true
+                sttClient.disconnect()
                 syncState()
                 onStateChanged?()
                 return
             }
 
-            let context = AppContext.current
+            let appContext = AppContext.current
+            var refinerContext: [String: String] = [
+                RefinerContextKey.category: appContext?.category.rawValue ?? "generic",
+                RefinerContextKey.appName: appContext?.appName ?? "Unknown",
+            ]
+            if let bundleID = appContext?.bundleIdentifier {
+                refinerContext[RefinerContextKey.bundleID] = bundleID
+            }
+            #if PROFEATURES
+            if let appName = appContext?.appName,
+               let customPrompt = prefs.appPrompts[appName], !customPrompt.isEmpty {
+                refinerContext[RefinerContextKey.customPrompt] = customPrompt
+            } else if !prefs.defaultPrompt.isEmpty {
+                refinerContext[RefinerContextKey.customPrompt] = prefs.defaultPrompt
+            }
+            #else
+            if !prefs.defaultPrompt.isEmpty {
+                refinerContext[RefinerContextKey.customPrompt] = prefs.defaultPrompt
+            }
+            #endif
+
             let refined: String
             var timedOut = false
 
@@ -246,34 +282,35 @@ final class RecordingCoordinator {
                 refined = result.0
                 timedOut = result.1
             } else {
-                (refined, timedOut) = await refineIfEnabled(rawTranscript, context: context)
+                (refined, timedOut) = await refineIfEnabled(rawTranscript, context: refinerContext)
             }
             currentMode = .normal
             #else
-            (refined, timedOut) = await refineIfEnabled(rawTranscript, context: context)
+            (refined, timedOut) = await refineIfEnabled(rawTranscript, context: refinerContext)
             #endif
 
             guard !Task.isCancelled else { return }
 
+            let injector = prefs.useDirectPaste ? directInjector : clipboardInjector
             injector.inject(refined)
             session.transition(.refinementDone)
 
             history.add(
                 rawTranscript: rawTranscript,
                 refinedText: refined,
-                appName: context?.appName ?? "Unknown",
-                category: context?.category.rawValue ?? "generic"
+                appName: refinerContext[RefinerContextKey.appName] ?? "Unknown",
+                category: refinerContext[RefinerContextKey.category] ?? "generic"
             )
 
             if timedOut {
                 hud.showError(String(localized: "error.refinement_timeout"))
-            } else {
-                #if DIRECT
+            } else if prefs.useDirectPaste {
                 hud.showInserted(text: refined)
-                #else
+            } else {
                 hud.showCopied(text: refined)
-                #endif
             }
+            intentionalDisconnect = true
+            sttClient.disconnect()
             syncState()
             onStateChanged?()
         }
@@ -333,15 +370,12 @@ final class RecordingCoordinator {
         }
     }
 
-    private func refineIfEnabled(_ text: String, context: AppContext?) async -> (String, Bool) {
+    private func refineIfEnabled(_ text: String, context: [String: String]) async -> (String, Bool) {
         guard prefs.refinementMode == .refine else { return (text, false) }
         #if PROFEATURES
         guard ProUpgradeManager.shared.isPro else { return (text, false) }
         #endif
         hud.showProcessing(transcript: text)
-        return await refinerClient.refine(
-            text: text,
-            category: context?.category.rawValue ?? "generic"
-        )
+        return await refinerClient.refine(text: text, context: context)
     }
 }

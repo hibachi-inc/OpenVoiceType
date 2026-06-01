@@ -7,10 +7,8 @@ import Carbon.HIToolbox
 @MainActor
 struct AccessibilityInjector: TextInjecting {
     private enum Timing {
-        static let inputSourceDelay: TimeInterval  = 0.05    // 50ms — wait for input source switch
-        static let preWriteDelay: TimeInterval     = 0.06    // 60ms — wait for pasteboard write to settle
-        static let interPasteDelay: TimeInterval   = 0.14    // 140ms — gap between double-paste
-        static let postPasteDelay: TimeInterval     = 0.22    // 220ms — wait for target app to process paste
+        static let preWriteDelay: TimeInterval  = 0.08    // 80ms — wait for input source switch + pasteboard write
+        static let postPasteDelay: TimeInterval = 0.20    // 200ms — wait for target app to process paste
     }
 
     func inject(_ text: String) {
@@ -28,18 +26,11 @@ struct AccessibilityInjector: TextInjecting {
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
 
-        let t1 = Timing.inputSourceDelay + Timing.preWriteDelay
-        let t2 = t1 + Timing.interPasteDelay
-        let t3 = t2 + Timing.postPasteDelay
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + t1) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + Timing.preWriteDelay) {
             postPaste()
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + t2) {
-            postPaste()
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + t3) {
-            if pasteboard.changeCount == savedChangeCount + 2 {
+        DispatchQueue.main.asyncAfter(deadline: .now() + Timing.preWriteDelay + Timing.postPasteDelay) {
+            if pasteboard.changeCount == savedChangeCount + 1 {
                 restorePasteboard(pasteboard, items: savedItems)
             }
             TISSelectInputSource(savedInputSource)

@@ -13,7 +13,7 @@ EMBED_PLIST = -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __info_plist -Xlinke
 .PHONY: build build-release bundle run clean bundle-mas bundle-dmg release dmg notarize
 
 build:
-	swift build $(EMBED_PLIST)
+	swift build $(DIRECT_FLAGS) $(EMBED_PLIST)
 
 build-release:
 	swift build -c release $(DIRECT_FLAGS) $(EMBED_PLIST)
