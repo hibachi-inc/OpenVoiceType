@@ -1,12 +1,12 @@
 import SwiftUI
 
-enum SidebarSection: String, CaseIterable, Identifiable {
+enum SidebarSection: String, Identifiable {
     case history = "history"
     case general = "general"
     case hotkey = "hotkey"
     #if PROFEATURES
-    case translation = "translation"
     case pro = "pro"
+    case translation = "translation"
     #endif
     case about = "about"
 
@@ -17,8 +17,8 @@ enum SidebarSection: String, CaseIterable, Identifiable {
         case .general: String(localized: "sidebar.general")
         case .hotkey: String(localized: "sidebar.hotkey")
         #if PROFEATURES
-        case .translation: String(localized: "sidebar.translation")
         case .pro: String(localized: "sidebar.pro")
+        case .translation: String(localized: "sidebar.translation")
         #endif
         case .history: String(localized: "sidebar.history")
         case .about: String(localized: "sidebar.about")
@@ -30,13 +30,19 @@ enum SidebarSection: String, CaseIterable, Identifiable {
         case .general: "gearshape"
         case .hotkey: "keyboard"
         #if PROFEATURES
-        case .translation: "globe"
         case .pro: "sparkles"
+        case .translation: "globe"
         #endif
         case .history: "clock.arrow.circlepath"
         case .about: "info.circle"
         }
     }
+
+    static let freeItems: [SidebarSection] = [.history, .general, .hotkey]
+    #if PROFEATURES
+    static let proItems: [SidebarSection] = [.pro, .translation]
+    #endif
+    static let otherItems: [SidebarSection] = [.about]
 }
 
 struct MainWindowView: View {
@@ -44,9 +50,24 @@ struct MainWindowView: View {
 
     var body: some View {
         NavigationSplitView {
-            List(SidebarSection.allCases, selection: $selection) { section in
-                Label(section.label, systemImage: section.icon)
-                    .tag(section)
+            List(selection: $selection) {
+                Section {
+                    ForEach(SidebarSection.freeItems) { section in
+                        Label(section.label, systemImage: section.icon).tag(section)
+                    }
+                }
+                #if PROFEATURES
+                Section {
+                    ForEach(SidebarSection.proItems) { section in
+                        Label(section.label, systemImage: section.icon).tag(section)
+                    }
+                }
+                #endif
+                Section {
+                    ForEach(SidebarSection.otherItems) { section in
+                        Label(section.label, systemImage: section.icon).tag(section)
+                    }
+                }
             }
             .listStyle(.sidebar)
             .navigationSplitViewColumnWidth(min: 160, ideal: 180, max: 220)

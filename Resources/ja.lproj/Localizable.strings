@@ -151,7 +151,6 @@
 "pro.invalid_key" = "無効なライセンスキーです。";
 "pro.validating" = "検証中...";
 "pro.network_error" = "ネットワークエラー。もう一度お試しください。";
-"pro.upgrade_hint_refine" = "Proにアップグレードすると AI整形が有効になります。";
 "pro.upgrade_hint_translate" = "Proにアップグレードすると翻訳機能が有効になります。";
 "pro.ai_refinement_active" = "AI 整形";
 "pro.translation_active" = "翻訳";
