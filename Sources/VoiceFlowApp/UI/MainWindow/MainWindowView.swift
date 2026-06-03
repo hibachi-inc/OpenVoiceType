@@ -70,6 +70,8 @@ struct MainWindowView: View {
                 }
             }
             .listStyle(.sidebar)
+            .scrollContentBackground(.hidden)
+            .background(DS.Colors.sidebarBg)
             .navigationSplitViewColumnWidth(min: 160, ideal: 180, max: 220)
         } detail: {
             Group {
@@ -85,6 +87,7 @@ struct MainWindowView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(DS.Colors.windowBg)
         }
     }
 }

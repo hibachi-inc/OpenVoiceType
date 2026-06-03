@@ -188,6 +188,8 @@ struct GeneralSettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
+        .background(DS.Colors.windowBg)
         .navigationTitle(String(localized: "sidebar.general"))
         .onAppear { refreshPermissions() }
         .onReceive(Timer.publish(every: 2, on: .main, in: .common).autoconnect()) { _ in

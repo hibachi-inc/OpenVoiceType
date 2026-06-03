@@ -19,6 +19,8 @@ struct HotkeySettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
+        .background(DS.Colors.windowBg)
         .navigationTitle(String(localized: "sidebar.hotkey"))
     }
 

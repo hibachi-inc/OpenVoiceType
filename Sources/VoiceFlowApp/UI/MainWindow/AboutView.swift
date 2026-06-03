@@ -73,6 +73,8 @@ struct AboutView: View {
             }
         }
         .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
+        .background(DS.Colors.windowBg)
         .navigationTitle(String(localized: "sidebar.about"))
     }
 }

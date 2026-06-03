@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 enum DS {
     // MARK: - Spacing
@@ -43,6 +44,22 @@ enum DS {
         static let success = Color.green
         static let error = Color.red
         static let accent = Color.accentColor
+
+        static let windowBg = Color(nsColor: .init(name: nil) { ap in
+            ap.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                ? NSColor(srgbRed: 0.098, green: 0.082, blue: 0.071, alpha: 1)  // #191412
+                : NSColor(srgbRed: 0.969, green: 0.957, blue: 0.941, alpha: 1)  // #F7F4F0
+        })
+        static let cardBg = Color(nsColor: .init(name: nil) { ap in
+            ap.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                ? NSColor(srgbRed: 0.145, green: 0.125, blue: 0.114, alpha: 1)  // #25201D
+                : NSColor(srgbRed: 1.0, green: 0.992, blue: 0.98, alpha: 1)     // #FFFDFB
+        })
+        static let sidebarBg = Color(nsColor: .init(name: nil) { ap in
+            ap.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                ? NSColor(srgbRed: 0.075, green: 0.063, blue: 0.055, alpha: 1)  // #13100E
+                : NSColor(srgbRed: 0.933, green: 0.914, blue: 0.89, alpha: 1)   // #EDE9E3
+        })
     }
 
     // MARK: - Animation

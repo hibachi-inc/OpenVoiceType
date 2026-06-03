@@ -201,7 +201,7 @@ struct HistoryCard: View {
             #endif
         }
         .padding(DS.Spacing.md)
-        .background(.background.secondary)
+        .background(DS.Colors.cardBg)
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous))
     }
 

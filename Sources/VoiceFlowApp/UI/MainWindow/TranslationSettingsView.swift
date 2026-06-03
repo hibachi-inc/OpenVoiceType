@@ -75,6 +75,8 @@ struct TranslationSettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
+        .background(DS.Colors.windowBg)
         .navigationTitle(String(localized: "sidebar.translation"))
         .sheet(isPresented: $showingAddSheet) {
             AddLanguageSheet(onAdd: { lang in
