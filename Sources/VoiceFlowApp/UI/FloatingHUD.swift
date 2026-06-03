@@ -147,10 +147,10 @@ final class FloatingHUD: HUDProtocol {
     private func updateContent() {
         hostingView?.rootView = makeView()
         guard let panel else { return }
-        let w = calculateWidth()
+        let size = calculateSize()
         let frame = panel.frame
         panel.setFrame(
-            NSRect(x: frame.midX - w / 2, y: frame.origin.y, width: w, height: DS.Panel.hudHeight),
+            NSRect(x: frame.midX - size.width / 2, y: frame.origin.y + (frame.height - size.height) / 2, width: size.width, height: size.height),
             display: true
         )
     }
@@ -168,21 +168,28 @@ final class FloatingHUD: HUDProtocol {
 
     private func positionPanel(_ panel: NSPanel) {
         guard let screen = NSScreen.main else { return }
-        let w = calculateWidth()
+        let size = calculateSize()
         let visibleFrame = screen.visibleFrame
         panel.setFrame(
-            NSRect(x: visibleFrame.midX - w / 2, y: visibleFrame.minY + DS.Panel.hudBottomOffset, width: w, height: DS.Panel.hudHeight),
+            NSRect(x: visibleFrame.midX - size.width / 2, y: visibleFrame.minY + DS.Panel.hudBottomOffset, width: size.width, height: size.height),
             display: true
         )
     }
 
-    private func calculateWidth() -> CGFloat {
+    private func calculateSize() -> NSSize {
         let maxWidth: CGFloat = 500
+        let w: CGFloat
         if transcript.isEmpty {
-            return 180
+            w = 180
+        } else {
+            let charCount = transcript.suffix(80).count
+            let textWidth = CGFloat(min(charCount, 30)) * 8
+            w = min(maxWidth, 180 + textWidth)
         }
-        let charCount = transcript.suffix(80).count
-        let textWidth = CGFloat(min(charCount, 30)) * 8
-        return min(maxWidth, 180 + textWidth)
+        if let hosting = hostingView {
+            let fittingSize = hosting.fittingSize
+            return NSSize(width: max(w, fittingSize.width + 16), height: max(36, fittingSize.height + 8))
+        }
+        return NSSize(width: w, height: DS.Panel.hudHeight)
     }
 }
