@@ -166,12 +166,19 @@ struct HistoryCard: View {
             Text(entry.refinedText)
                 .font(DS.Font.body)
                 .lineLimit(3)
+                .textSelection(.enabled)
 
             if entry.rawTranscript != entry.refinedText {
-                Text(entry.rawTranscript)
-                    .font(DS.Font.caption)
-                    .foregroundStyle(DS.Colors.secondary)
-                    .lineLimit(1)
+                HStack(spacing: 4) {
+                    Image(systemName: "mic.fill")
+                        .font(.system(size: 8))
+                        .foregroundStyle(DS.Colors.secondary.opacity(0.5))
+                    Text(entry.rawTranscript)
+                        .font(DS.Font.caption)
+                        .foregroundStyle(DS.Colors.secondary.opacity(0.7))
+                        .lineLimit(1)
+                }
+                .padding(.top, 2)
             }
 
             #if !PROFEATURES
