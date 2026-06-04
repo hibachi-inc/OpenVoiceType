@@ -210,4 +210,5 @@
 "menubar.window" = "Window";
 "menubar.minimize" = "Minimize";
 "menubar.help" = "Help";
+"menubar.check_updates" = "Check for Updates...";
 "menubar.website" = "VoiceLatte Website";

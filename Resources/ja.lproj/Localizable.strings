@@ -210,4 +210,5 @@
 "menubar.window" = "ウインドウ";
 "menubar.minimize" = "しまう";
 "menubar.help" = "ヘルプ";
+"menubar.check_updates" = "アップデートを確認...";
 "menubar.website" = "VoiceLatte ウェブサイト";

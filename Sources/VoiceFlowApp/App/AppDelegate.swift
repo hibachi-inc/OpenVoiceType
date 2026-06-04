@@ -14,12 +14,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     #if PROFEATURES
     private var translateHotkeys: [GlobalHotkey] = []
     #endif
+    #if DIRECT
+    private let sparkleUpdater = SparkleUpdater()
+    #endif
     private let prefs = PreferencesStore.shared
     private let appName: String = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
         ?? Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "OpenVoiceText"
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupMainMenu()
+        #if DIRECT
+        sparkleUpdater.start()
+        #endif
         coordinator.setup()
         coordinator.onStateChanged = { [weak self] in self?.handleStateChanged() }
         setupStatusItem()
@@ -37,6 +43,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let appMenu = NSMenu()
         appMenu.addItem(withTitle: String(localized: "menubar.about \(appName)"), action: #selector(showAbout), keyEquivalent: "")
         appMenu.addItem(.separator())
+        #if DIRECT
+        let checkUpdates = appMenu.addItem(
+            withTitle: String(localized: "menubar.check_updates"),
+            action: #selector(SparkleUpdater.checkForUpdates(_:)),
+            keyEquivalent: ""
+        )
+        checkUpdates.target = sparkleUpdater
+        #endif
         appMenu.addItem(withTitle: String(localized: "menubar.settings"), action: #selector(openSettings), keyEquivalent: ",")
         appMenu.addItem(.separator())
         let hideItem = appMenu.addItem(withTitle: String(localized: "menubar.hide \(appName)"), action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
