@@ -380,9 +380,6 @@ final class RecordingCoordinator {
 
     private func refineIfEnabled(_ text: String, context: [String: String]) async -> (String, Bool) {
         guard prefs.refinementMode == .refine else { return (text, false) }
-        #if PROFEATURES
-        guard ProUpgradeManager.shared.isPro else { return (text, false) }
-        #endif
         hud.showProcessing(transcript: text)
         return await refinerClient.refine(text: text, context: context)
     }
