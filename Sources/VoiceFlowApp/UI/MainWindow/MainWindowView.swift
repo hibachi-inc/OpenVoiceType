@@ -7,6 +7,7 @@ enum SidebarSection: String, Identifiable {
     #if PROFEATURES
     case pro = "pro"
     case translation = "translation"
+    case customRefine = "customRefine"
     #endif
     case about = "about"
 
@@ -19,6 +20,7 @@ enum SidebarSection: String, Identifiable {
         #if PROFEATURES
         case .pro: String(localized: "sidebar.pro")
         case .translation: String(localized: "sidebar.translation")
+        case .customRefine: String(localized: "sidebar.custom_refine")
         #endif
         case .history: String(localized: "sidebar.history")
         case .about: String(localized: "sidebar.about")
@@ -32,6 +34,7 @@ enum SidebarSection: String, Identifiable {
         #if PROFEATURES
         case .pro: "sparkles"
         case .translation: "globe"
+        case .customRefine: "slider.horizontal.3"
         #endif
         case .history: "clock.arrow.circlepath"
         case .about: "info.circle"
@@ -40,7 +43,7 @@ enum SidebarSection: String, Identifiable {
 
     static let freeItems: [SidebarSection] = [.history, .general, .hotkey]
     #if PROFEATURES
-    static let proItems: [SidebarSection] = [.pro, .translation]
+    static let proItems: [SidebarSection] = [.pro, .translation, .customRefine]
     #endif
     static let otherItems: [SidebarSection] = [.about]
 }
@@ -81,6 +84,7 @@ struct MainWindowView: View {
                 case .hotkey: HotkeySettingsView()
                 #if PROFEATURES
                 case .translation: TranslationSettingsView()
+                case .customRefine: CustomRefineSettingsView()
                 case .pro: ProUpgradeView()
                 #endif
                 case .history: HistoryView()

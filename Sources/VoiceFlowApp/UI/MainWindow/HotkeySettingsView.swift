@@ -17,6 +17,14 @@ struct HotkeySettingsView: View {
                     .font(DS.Font.caption)
                     .foregroundStyle(DS.Colors.secondary)
             }
+
+            Section {
+                Button("hotkey.reset", role: .destructive) {
+                    prefs.hotkeyModifier = .control
+                    prefs.hotkeyKey = .v
+                    reinstallHotkey()
+                }
+            }
         }
         .formStyle(.grouped)
         .scrollContentBackground(.hidden)

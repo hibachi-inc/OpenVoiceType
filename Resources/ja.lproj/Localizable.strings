@@ -22,7 +22,7 @@
 "sidebar.translation" = "翻訳";
 "sidebar.pro" = "Pro";
 "sidebar.history" = "履歴";
-"sidebar.about" = "このアプリについて";
+"sidebar.about" = "アプリについて";
 
 /* General Settings */
 "general.speech_recognition" = "音声認識";
@@ -39,9 +39,9 @@
 "general.locale.es" = "スペイン語";
 "general.on_device" = "デバイス上で処理されます。音声がサーバーに送信されることはありません。";
 "general.stt_engine" = "認識エンジン";
-"general.stt_engine.auto" = "高精度（Apple Intelligence）";
-"general.stt_engine.auto_desc" = "高精度な認識と自動句読点。macOS 26以降が必要。";
-"general.stt_engine.classic" = "クラシック（SFSpeechRecognizer）";
+"general.stt_engine.auto" = "高精度（macOS 26+）";
+"general.stt_engine.auto_desc" = "";
+"general.stt_engine.classic" = "クラシック（macOS 14+）";
 "general.stt_engine.classic_desc" = "標準のオンデバイス音声認識。";
 "general.refinement" = "テキスト整形";
 "general.mode" = "モード";
@@ -119,7 +119,7 @@
 /* About */
 "about.version %@ %@" = "バージョン %1$@ (%2$@)";
 "about.tagline" = "macOS 向けコンテキスト対応音声入力";
-"about.tagline_pro" = "macOS 向け AI 音声入力";
+"about.tagline_pro" = "macOS 向けローカル AI 音声入力";
 "about.links" = "リンク";
 "about.website" = "ウェブサイト";
 "about.github" = "GitHub リポジトリ";
@@ -185,3 +185,6 @@
 "error.stt_connection_lost" = "音声認識サービスとの接続が切れました。";
 "error.refinement_timeout" = "整形をスキップしました (タイムアウト)";
 "general.output_method.clipboard_auto_desc" = "アクセシビリティ権限が未設定です。テキストはクリップボードにコピーされます（⌘Vでペースト）。権限を付与するとカーソル位置に自動挿入されます。";
+"hotkey.reset" = "デフォルトに戻す（⌃V）";
+"sidebar.custom_refine" = "カスタム整形";
+"pro.upgrade_hint_custom_refine" = "Proにアップグレードするとアプリ別の整形指示が使えます。";

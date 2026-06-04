@@ -72,14 +72,26 @@ struct AboutView: View {
             #endif
 
             Section {
-                Text("about.privacy")
-                    .font(DS.Font.caption)
-                    .foregroundStyle(DS.Colors.secondary)
+                Button("general.restart_app") {
+                    restartApp()
+                }
             }
         }
         .formStyle(.grouped)
         .scrollContentBackground(.hidden)
         .background(DS.Colors.windowBg)
         .navigationTitle(String(localized: "sidebar.about"))
+    }
+
+    private func restartApp() {
+        let url = Bundle.main.bundleURL
+        let config = NSWorkspace.OpenConfiguration()
+        config.createsNewApplicationInstance = true
+        NSWorkspace.shared.openApplication(at: url, configuration: config) { _, error in
+            guard error == nil else { return }
+            DispatchQueue.main.async {
+                NSApplication.shared.terminate(nil)
+            }
+        }
     }
 }

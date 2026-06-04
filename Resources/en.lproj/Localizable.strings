@@ -39,9 +39,9 @@
 "general.locale.es" = "Spanish";
 "general.on_device" = "On-device recognition. No audio is sent to any server.";
 "general.stt_engine" = "Recognition Engine";
-"general.stt_engine.auto" = "Enhanced (Apple Intelligence)";
-"general.stt_engine.auto_desc" = "Higher accuracy with automatic punctuation. Requires macOS 26+.";
-"general.stt_engine.classic" = "Classic (SFSpeechRecognizer)";
+"general.stt_engine.auto" = "Enhanced (macOS 26+)";
+"general.stt_engine.auto_desc" = "";
+"general.stt_engine.classic" = "Classic (macOS 14+)";
 "general.stt_engine.classic_desc" = "Standard on-device speech recognition.";
 "general.refinement" = "Text Refinement";
 "general.mode" = "Mode";
@@ -119,7 +119,7 @@
 /* About */
 "about.version %@ %@" = "Version %@ (%@)";
 "about.tagline" = "Context-aware voice input for macOS";
-"about.tagline_pro" = "AI-powered voice input for macOS";
+"about.tagline_pro" = "Local AI-powered voice input for macOS";
 "about.links" = "Links";
 "about.website" = "Website";
 "about.github" = "GitHub Repository";
@@ -185,3 +185,6 @@
 "error.stt_connection_lost" = "Speech service connection lost.";
 "error.refinement_timeout" = "Refinement skipped (timeout)";
 "general.output_method.clipboard_auto_desc" = "Accessibility not enabled. Text is copied to clipboard — press ⌘V to paste. Grant accessibility permission to enable auto-insert at cursor.";
+"hotkey.reset" = "Reset to Default (⌃V)";
+"sidebar.custom_refine" = "Custom Refine";
+"pro.upgrade_hint_custom_refine" = "Upgrade to Pro to customize per-app refinement.";

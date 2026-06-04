@@ -56,11 +56,11 @@ struct GeneralSettingsView: View {
                 }
                 .pickerStyle(.radioGroup)
 
-                Text(prefs.sttEngine == .enhanced
-                    ? String(localized: "general.stt_engine.auto_desc")
-                    : String(localized: "general.stt_engine.classic_desc"))
-                    .font(DS.Font.caption)
-                    .foregroundStyle(DS.Colors.secondary)
+                if prefs.sttEngine == .classic {
+                    Text("general.stt_engine.classic_desc")
+                        .font(DS.Font.caption)
+                        .foregroundStyle(DS.Colors.secondary)
+                }
 
                 if prefs.sttEngine == .enhanced {
                     if #available(macOS 26, *) {
@@ -94,6 +94,9 @@ struct GeneralSettingsView: View {
                 TextEditor(text: $prefs.defaultPrompt)
                     .font(DS.Font.body)
                     .frame(height: 50)
+                    .scrollContentBackground(.hidden)
+                    .background(DS.Colors.fieldBg)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
                     .overlay(
                         RoundedRectangle(cornerRadius: 4)
                             .stroke(DS.Colors.secondary.opacity(0.3))
@@ -126,15 +129,6 @@ struct GeneralSettingsView: View {
                 #endif
             }
 
-            #if PROFEATURES
-            Section("refinement.app_prompts") {
-                AppPromptEditor()
-
-                Text("refinement.app_prompts_desc")
-                    .font(DS.Font.caption)
-                    .foregroundStyle(DS.Colors.secondary)
-            }
-            #endif
 
             #if DIRECT
             Section("general.output_method") {
@@ -185,11 +179,6 @@ struct GeneralSettingsView: View {
                 #endif
             }
 
-            Section {
-                Button("general.restart_app") {
-                    restartApp()
-                }
-            }
         }
         .formStyle(.grouped)
         .scrollContentBackground(.hidden)
@@ -341,6 +330,9 @@ struct AppPromptEditor: View {
                     TextEditor(text: $promptText)
                         .font(DS.Font.body)
                         .frame(height: 60)
+                        .scrollContentBackground(.hidden)
+                        .background(DS.Colors.fieldBg)
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
                         .overlay(
                             RoundedRectangle(cornerRadius: 4)
                                 .stroke(DS.Colors.secondary.opacity(0.3))

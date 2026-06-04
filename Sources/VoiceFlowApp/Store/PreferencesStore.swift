@@ -28,8 +28,10 @@ final class PreferencesStore {
         didSet {
             if appLanguage == "system" {
                 defaults.removeObject(forKey: "AppleLanguages")
+                defaults.removeObject(forKey: "appLanguageUserSet")
             } else {
                 defaults.set([appLanguage], forKey: "AppleLanguages")
+                defaults.set(true, forKey: "appLanguageUserSet")
             }
         }
     }
@@ -63,7 +65,9 @@ final class PreferencesStore {
         refinementMode = RefinementMode(rawValue: defaults.string(forKey: "refinementMode") ?? "") ?? .refine
         sttEngine = STTEngine(rawValue: defaults.string(forKey: "sttEngine") ?? "") ?? .enhanced
         launchAtLogin = defaults.bool(forKey: "launchAtLogin")
-        if let langs = defaults.array(forKey: "AppleLanguages") as? [String], let first = langs.first {
+        if defaults.object(forKey: "appLanguageUserSet") != nil,
+           let langs = defaults.array(forKey: "AppleLanguages") as? [String],
+           let first = langs.first {
             appLanguage = first
         } else {
             appLanguage = "system"

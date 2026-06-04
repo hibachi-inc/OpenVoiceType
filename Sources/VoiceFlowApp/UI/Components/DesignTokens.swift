@@ -54,6 +54,7 @@ enum DS {
         static let error = Color(red: 0.8, green: 0.25, blue: 0.2)              // recording同色
 
         // Surface colors
+        static let fieldBg = Color(red: 0.984, green: 0.980, blue: 0.973)       // #FBFAF8
         static let windowBg = Color(red: 0.992, green: 0.949, blue: 0.824)      // #FDF2D2
         static let cardBg = Color.white.opacity(0.5)                             // 半透明白
         static let sidebarBg = darkCoffee                                        // #6f4c3e
