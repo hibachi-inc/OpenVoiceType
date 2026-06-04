@@ -126,6 +126,7 @@
 "about.links" = "Links";
 "about.website" = "Website";
 "about.github" = "GitHub Repository";
+"about.opensource" = "Open Source Project";
 "about.bug_report" = "Report a Bug";
 "about.x_account" = "@tanakaisworking on X";
 "about.reki" = "Reki note — by the same team";
@@ -192,6 +193,9 @@
 "error.stt_connection_lost" = "Speech service connection lost.";
 "error.refinement_timeout" = "Refinement skipped (timeout)";
 "general.output_method.clipboard_auto_desc" = "Accessibility not enabled. Text is copied to clipboard — press ⌘V to paste. Grant accessibility permission to enable auto-insert at cursor.";
+"hotkey.push_to_talk" = "Push to Talk";
+"hotkey.push_to_talk_toggle" = "Hold to record";
+"hotkey.push_to_talk_desc %@" = "Hold %@ to record. Release to finish and insert text. Works alongside the toggle shortcut.";
 "hotkey.reset" = "Reset to Default (⌃V)";
 "sidebar.custom_refine" = "Custom Refine";
 "pro.upgrade_hint_custom_refine" = "Upgrade to Pro to customize per-app refinement.";

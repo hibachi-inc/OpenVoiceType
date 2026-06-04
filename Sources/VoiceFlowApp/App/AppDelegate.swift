@@ -17,6 +17,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     #if DIRECT
     private let sparkleUpdater = SparkleUpdater()
     #endif
+    private var pttGlobalMonitor: Any?
+    private var pttLocalMonitor: Any?
+    private var pttKeyDownGlobalMonitor: Any?
+    private var pttKeyDownLocalMonitor: Any?
+    private var pttDebounce: Task<Void, Never>?
+    private var isPushToTalkActive = false
     private let prefs = PreferencesStore.shared
     private let appName: String = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
         ?? Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "OpenVoiceText"
@@ -30,6 +36,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         coordinator.onStateChanged = { [weak self] in self?.handleStateChanged() }
         setupStatusItem()
         installHotkey()
+        installPushToTalk()
         syncLaunchAtLogin()
         mainWindow.show()
     }
@@ -195,6 +202,73 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         #endif
     }
 
+    // MARK: - Push-to-Talk
+
+    func installPushToTalk() {
+        uninstallPushToTalk()
+        guard prefs.pushToTalk else { return }
+
+        let flagsHandler: @Sendable (NSEvent) -> Void = { [weak self] event in
+            let flags = event.modifierFlags
+            Task { @MainActor in self?.handlePTTFlags(flags) }
+        }
+        pttGlobalMonitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged, handler: flagsHandler)
+        pttLocalMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { event in
+            flagsHandler(event)
+            return event
+        }
+
+        let cancelHandler: @Sendable (NSEvent) -> Void = { [weak self] _ in
+            Task { @MainActor in
+                self?.pttDebounce?.cancel()
+                self?.pttDebounce = nil
+            }
+        }
+        pttKeyDownGlobalMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown, handler: cancelHandler)
+        pttKeyDownLocalMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            cancelHandler(event)
+            return event
+        }
+    }
+
+    private func uninstallPushToTalk() {
+        [pttGlobalMonitor, pttLocalMonitor, pttKeyDownGlobalMonitor, pttKeyDownLocalMonitor]
+            .compactMap { $0 }
+            .forEach { NSEvent.removeMonitor($0) }
+        pttGlobalMonitor = nil
+        pttLocalMonitor = nil
+        pttKeyDownGlobalMonitor = nil
+        pttKeyDownLocalMonitor = nil
+        pttDebounce?.cancel()
+        pttDebounce = nil
+        isPushToTalkActive = false
+    }
+
+    private func handlePTTFlags(_ flags: NSEvent.ModifierFlags) {
+        let targetModifier = prefs.hotkeyModifier.eventModifier
+
+        if flags.contains(targetModifier) {
+            guard !coordinator.isRecording else { return }
+            pttDebounce?.cancel()
+            pttDebounce = Task {
+                try? await Task.sleep(for: .milliseconds(150))
+                guard !Task.isCancelled else { return }
+                self.isPushToTalkActive = true
+                self.coordinator.toggle()
+            }
+        } else if isPushToTalkActive {
+            pttDebounce?.cancel()
+            pttDebounce = nil
+            if coordinator.isRecording {
+                coordinator.toggle()
+            }
+            isPushToTalkActive = false
+        } else {
+            pttDebounce?.cancel()
+            pttDebounce = nil
+        }
+    }
+
     // MARK: - Recording stop/cancel hotkeys
 
     private func installStopHotkeys() {
@@ -219,11 +293,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func toggleRecording() {
+        guard !isPushToTalkActive else { return }
         coordinator.toggle()
     }
 
     private func handleStateChanged() {
-        if coordinator.isRecording {
+        if coordinator.isRecording && !isPushToTalkActive {
             installStopHotkeys()
         } else {
             uninstallStopHotkeys()
@@ -254,6 +329,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func terminateApp() {
         hotkey.unregister()
         uninstallStopHotkeys()
+        uninstallPushToTalk()
         #if PROFEATURES
         translateHotkeys.forEach { $0.unregister() }
         #endif

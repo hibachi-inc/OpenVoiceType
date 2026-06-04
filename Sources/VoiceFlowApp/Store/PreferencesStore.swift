@@ -54,6 +54,10 @@ final class PreferencesStore {
         didSet { defaults.set(muteOtherAudio, forKey: "muteOtherAudio") }
     }
 
+    var pushToTalk: Bool {
+        didSet { defaults.set(pushToTalk, forKey: "pushToTalk") }
+    }
+
     #if PROFEATURES
     var translationLanguages: [TranslationLanguage] {
         didSet { saveTranslationLanguages() }
@@ -86,6 +90,7 @@ final class PreferencesStore {
         useDirectPaste = false
         #endif
         muteOtherAudio = defaults.bool(forKey: "muteOtherAudio")
+        pushToTalk = defaults.bool(forKey: "pushToTalk")
         #if PROFEATURES
         translationLanguages = Self.loadTranslationLanguages(from: defaults)
         #endif

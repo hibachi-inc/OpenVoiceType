@@ -126,6 +126,7 @@
 "about.links" = "リンク";
 "about.website" = "ウェブサイト";
 "about.github" = "GitHub リポジトリ";
+"about.opensource" = "オープンソースプロジェクト";
 "about.bug_report" = "バグを報告";
 "about.x_account" = "@tanakaisworking（X）";
 "about.reki" = "Reki note — 同じチームが開発";
@@ -192,6 +193,9 @@
 "error.stt_connection_lost" = "音声認識サービスとの接続が切れました。";
 "error.refinement_timeout" = "整形をスキップしました (タイムアウト)";
 "general.output_method.clipboard_auto_desc" = "アクセシビリティ権限が未設定です。テキストはクリップボードにコピーされます（⌘Vでペースト）。権限を付与するとカーソル位置に自動挿入されます。";
+"hotkey.push_to_talk" = "長押し入力";
+"hotkey.push_to_talk_toggle" = "長押しで音声入力";
+"hotkey.push_to_talk_desc %@" = "%@ キーを押している間だけ音声入力します。離すと入力完了します。通常のショートカットも併用できます。";
 "hotkey.reset" = "デフォルトに戻す（⌃V）";
 "sidebar.custom_refine" = "カスタム整形";
 "pro.upgrade_hint_custom_refine" = "Proにアップグレードするとアプリ別の整形指示が使えます。";

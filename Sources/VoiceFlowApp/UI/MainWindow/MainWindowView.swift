@@ -92,6 +92,8 @@ struct MainWindowView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .foregroundStyle(DS.Colors.primary)
+            .tint(DS.Colors.accent)
             .background(DS.Colors.windowBg)
         }
     }

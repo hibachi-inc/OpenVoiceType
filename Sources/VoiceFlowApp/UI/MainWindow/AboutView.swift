@@ -40,6 +40,11 @@ struct AboutView: View {
                     Label("about.website", systemImage: "globe")
                 }
                 .foregroundStyle(DS.Colors.espresso)
+
+                Link(destination: URL(string: "https://github.com/hibachi-inc/OpenVoiceText")!) {
+                    Label("about.opensource", systemImage: "chevron.left.forwardslash.chevron.right")
+                }
+                .foregroundStyle(DS.Colors.espresso)
                 #else
                 Link(destination: URL(string: "https://github.com/hibachi-inc/OpenVoiceText")!) {
                     Label("about.github", systemImage: "link")

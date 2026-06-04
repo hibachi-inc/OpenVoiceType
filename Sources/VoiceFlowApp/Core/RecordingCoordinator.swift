@@ -303,13 +303,14 @@ final class RecordingCoordinator {
             canDirectPaste = false
             #endif
 
+            let cleaned = Self.stripWrappingQuotes(refined)
             let injector = canDirectPaste ? directInjector : clipboardInjector
-            injector.inject(refined)
+            injector.inject(cleaned)
             session.transition(.refinementDone)
 
             history.add(
                 rawTranscript: rawTranscript,
-                refinedText: refined,
+                refinedText: cleaned,
                 appName: refinerContext[RefinerContextKey.appName] ?? "Unknown",
                 category: refinerContext[RefinerContextKey.category] ?? "generic"
             )
@@ -319,9 +320,9 @@ final class RecordingCoordinator {
             if timedOut {
                 hud.showError(String(localized: "error.refinement_timeout"))
             } else if canDirectPaste {
-                hud.showInserted(text: refined)
+                hud.showInserted(text: cleaned)
             } else {
-                hud.showCopied(text: refined)
+                hud.showCopied(text: cleaned)
             }
             intentionalDisconnect = true
             sttClient.disconnect()
@@ -384,6 +385,30 @@ final class RecordingCoordinator {
             syncState()
             onStateChanged?()
         }
+    }
+
+    // MARK: - Text Cleanup
+
+    /// AI整形が付与する先頭・末尾の引用符を除去する
+    private static func stripWrappingQuotes(_ text: String) -> String {
+        var s = text
+        // 「...」
+        if s.hasPrefix("「") && s.hasSuffix("」") {
+            s = String(s.dropFirst().dropLast())
+        }
+        // 『...』
+        else if s.hasPrefix("『") && s.hasSuffix("』") {
+            s = String(s.dropFirst().dropLast())
+        }
+        // "..."（全角）
+        else if s.hasPrefix("\u{201C}") && s.hasSuffix("\u{201D}") {
+            s = String(s.dropFirst().dropLast())
+        }
+        // "..."（半角）
+        else if s.hasPrefix("\"") && s.hasSuffix("\"") && s.count > 1 {
+            s = String(s.dropFirst().dropLast())
+        }
+        return s
     }
 
     // MARK: - System Audio Mute
