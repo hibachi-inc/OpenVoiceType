@@ -14,7 +14,7 @@ public enum RefinerContextKey {
 
 public enum RefinerXPCConstants {
     #if PROFEATURES
-    public static let serviceName = "com.hibachi.koeri.refiner"
+    public static let serviceName = "com.hibachi.voicelatte.refiner"
     #else
     public static let serviceName = "com.hibachi.voiceflow.refiner"
     #endif

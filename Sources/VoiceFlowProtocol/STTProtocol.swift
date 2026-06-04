@@ -14,7 +14,7 @@ import Foundation
 
 public enum STTXPCConstants {
     #if PROFEATURES
-    public static let serviceName = "com.hibachi.koeri.stt"
+    public static let serviceName = "com.hibachi.voicelatte.stt"
     #else
     public static let serviceName = "com.hibachi.voiceflow.stt"
     #endif

@@ -131,7 +131,7 @@
 "about.privacy" = "すべてローカルで処理。音声やテキストが Mac の外に出ることはありません。";
 
 /* Pro */
-"pro.title" = "Koeri Pro";
+"pro.title" = "VoiceLatte Pro";
 "pro.unlocked" = "アンロック済み";
 "pro.upgrade_prompt" = "AI 整形と翻訳をアンロック";
 "pro.features" = "Pro 機能";

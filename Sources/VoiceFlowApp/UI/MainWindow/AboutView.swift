@@ -36,7 +36,7 @@ struct AboutView: View {
 
             Section("about.links") {
                 #if PROFEATURES
-                Link(destination: URL(string: "https://koeri.app/")!) {
+                Link(destination: URL(string: "https://voicelatte.app/")!) {
                     Label("about.website", systemImage: "globe")
                 }
                 .foregroundStyle(DS.Colors.espresso)
