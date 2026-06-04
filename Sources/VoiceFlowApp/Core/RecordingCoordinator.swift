@@ -294,7 +294,7 @@ final class RecordingCoordinator {
 
             let canDirectPaste: Bool
             #if DIRECT
-            canDirectPaste = AXIsProcessTrusted()
+            canDirectPaste = prefs.useDirectPaste && AXIsProcessTrusted()
             #else
             canDirectPaste = false
             #endif

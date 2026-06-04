@@ -19,12 +19,86 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ?? Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "OpenVoiceText"
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        setupMainMenu()
         coordinator.setup()
         coordinator.onStateChanged = { [weak self] in self?.handleStateChanged() }
         setupStatusItem()
         installHotkey()
         syncLaunchAtLogin()
         mainWindow.show()
+    }
+
+    // MARK: - Main Menu Bar
+
+    private func setupMainMenu() {
+        let mainMenu = NSMenu()
+
+        // App menu
+        let appMenu = NSMenu()
+        appMenu.addItem(withTitle: String(localized: "menubar.about \(appName)"), action: #selector(showAbout), keyEquivalent: "")
+        appMenu.addItem(.separator())
+        appMenu.addItem(withTitle: String(localized: "menubar.settings"), action: #selector(openSettings), keyEquivalent: ",")
+        appMenu.addItem(.separator())
+        let hideItem = appMenu.addItem(withTitle: String(localized: "menubar.hide \(appName)"), action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        hideItem.target = NSApp
+        let hideOthersItem = appMenu.addItem(withTitle: String(localized: "menubar.hide_others"), action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h")
+        hideOthersItem.keyEquivalentModifierMask = [.command, .option]
+        hideOthersItem.target = NSApp
+        let showAllItem = appMenu.addItem(withTitle: String(localized: "menubar.show_all"), action: #selector(NSApplication.unhideAllApplications(_:)), keyEquivalent: "")
+        showAllItem.target = NSApp
+        appMenu.addItem(.separator())
+        appMenu.addItem(withTitle: String(localized: "menubar.quit \(appName)"), action: #selector(terminateApp), keyEquivalent: "q")
+
+        let appMenuItem = NSMenuItem()
+        appMenuItem.submenu = appMenu
+        mainMenu.addItem(appMenuItem)
+
+        // File menu
+        let fileMenu = NSMenu(title: String(localized: "menubar.file"))
+        fileMenu.addItem(withTitle: String(localized: "menubar.close_window"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        let fileMenuItem = NSMenuItem()
+        fileMenuItem.submenu = fileMenu
+        mainMenu.addItem(fileMenuItem)
+
+        // Edit menu
+        let editMenu = NSMenu(title: String(localized: "menubar.edit"))
+        editMenu.addItem(withTitle: String(localized: "menubar.cut"), action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        editMenu.addItem(withTitle: String(localized: "menubar.copy"), action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        editMenu.addItem(withTitle: String(localized: "menubar.paste"), action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        editMenu.addItem(withTitle: String(localized: "menubar.select_all"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        let editMenuItem = NSMenuItem()
+        editMenuItem.submenu = editMenu
+        mainMenu.addItem(editMenuItem)
+
+        // Window menu
+        let windowMenu = NSMenu(title: String(localized: "menubar.window"))
+        windowMenu.addItem(withTitle: String(localized: "menubar.minimize"), action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
+        let windowMenuItem = NSMenuItem()
+        windowMenuItem.submenu = windowMenu
+        mainMenu.addItem(windowMenuItem)
+        NSApp.windowsMenu = windowMenu
+
+        // Help menu
+        let helpMenu = NSMenu(title: String(localized: "menubar.help"))
+        helpMenu.addItem(withTitle: String(localized: "menubar.website"), action: #selector(openWebsite), keyEquivalent: "")
+        let helpMenuItem = NSMenuItem()
+        helpMenuItem.submenu = helpMenu
+        mainMenu.addItem(helpMenuItem)
+        NSApp.helpMenu = helpMenu
+
+        NSApp.mainMenu = mainMenu
+    }
+
+    @objc private func showAbout() {
+        mainWindow.show()
+    }
+
+    @objc private func openWebsite() {
+        #if PROFEATURES
+        NSWorkspace.shared.open(URL(string: "https://voicelatte.app/")!)
+        #else
+        NSWorkspace.shared.open(URL(string: "https://github.com/hibachi-inc/OpenVoiceText")!)
+        #endif
     }
 
     // MARK: - Status Bar

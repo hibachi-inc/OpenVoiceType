@@ -133,7 +133,7 @@
 /* Pro */
 "pro.title" = "VoiceLatte Pro";
 "pro.unlocked" = "アンロック済み";
-"pro.upgrade_prompt" = "AI 整形と翻訳をアンロック";
+"pro.upgrade_prompt" = "翻訳とアプリ別カスタム整形をアンロック";
 "pro.features" = "Pro 機能";
 "pro.ai_refinement" = "AIテキスト整形";
 "pro.context_aware" = "コンテキスト対応フォーマット (チャット・メール・コード...)";
@@ -143,7 +143,7 @@
 "pro.loading" = "読み込み中...";
 "pro.restore" = "購入を復元";
 "pro.enter_license" = "ライセンスキー";
-"pro.enter_license.placeholder" = "KOERI_XXXX-XXXX-XXXX-XXXX";
+"pro.enter_license.placeholder" = "VLATTE_XXXX-XXXX-XXXX-XXXX";
 "pro.activate" = "アクティベート";
 "pro.deactivate" = "ライセンスを解除";
 "pro.buy_license" = "ライセンスを購入";
@@ -154,6 +154,10 @@
 "pro.upgrade_hint_translate" = "Proにアップグレードすると翻訳機能が有効になります。";
 "pro.ai_refinement_active" = "AI 整形";
 "pro.translation_active" = "翻訳";
+"pro.custom_refine_active" = "カスタム整形";
+"pro.feature_translation" = "多言語翻訳";
+"pro.feature_lang_shortcuts" = "言語ごとのショートカットキー";
+"pro.feature_custom_refine" = "アプリ別カスタム整形プロンプト";
 
 /* Translation Settings */
 "translation.enabled" = "有効な言語";
@@ -188,3 +192,22 @@
 "hotkey.reset" = "デフォルトに戻す（⌃V）";
 "sidebar.custom_refine" = "カスタム整形";
 "pro.upgrade_hint_custom_refine" = "Proにアップグレードするとアプリ別の整形指示が使えます。";
+
+/* Menu Bar */
+"menubar.about %@" = "%@ について";
+"menubar.settings" = "設定...";
+"menubar.hide %@" = "%@ を隠す";
+"menubar.hide_others" = "ほかを隠す";
+"menubar.show_all" = "すべてを表示";
+"menubar.quit %@" = "%@ を終了";
+"menubar.file" = "ファイル";
+"menubar.close_window" = "ウインドウを閉じる";
+"menubar.edit" = "編集";
+"menubar.cut" = "カット";
+"menubar.copy" = "コピー";
+"menubar.paste" = "ペースト";
+"menubar.select_all" = "すべてを選択";
+"menubar.window" = "ウインドウ";
+"menubar.minimize" = "しまう";
+"menubar.help" = "ヘルプ";
+"menubar.website" = "VoiceLatte ウェブサイト";

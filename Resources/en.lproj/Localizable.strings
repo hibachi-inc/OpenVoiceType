@@ -133,17 +133,20 @@
 /* Pro */
 "pro.title" = "VoiceLatte Pro";
 "pro.unlocked" = "Unlocked";
-"pro.upgrade_prompt" = "Upgrade to unlock AI refinement and translation";
+"pro.upgrade_prompt" = "Unlock translation and per-app custom refinement";
 "pro.features" = "Pro Features";
 "pro.ai_refinement" = "AI-powered text refinement";
 "pro.context_aware" = "Context-aware formatting (chat, email, code...)";
 "pro.multi_lang" = "Multi-language translation";
 "pro.per_lang_shortcuts" = "Translate with per-language shortcuts";
+"pro.feature_translation" = "Multi-language translation";
+"pro.feature_lang_shortcuts" = "Per-language shortcut keys";
+"pro.feature_custom_refine" = "Per-app custom refinement prompts";
 "pro.upgrade %@" = "Upgrade for %@";
 "pro.loading" = "Loading...";
 "pro.restore" = "Restore Purchases";
 "pro.enter_license" = "License Key";
-"pro.enter_license.placeholder" = "KOERI_XXXX-XXXX-XXXX-XXXX";
+"pro.enter_license.placeholder" = "VLATTE_XXXX-XXXX-XXXX-XXXX";
 "pro.activate" = "Activate";
 "pro.deactivate" = "Deactivate License";
 "pro.buy_license" = "Buy License";
@@ -154,6 +157,7 @@
 "pro.upgrade_hint_translate" = "Upgrade to Pro to enable translation.";
 "pro.ai_refinement_active" = "AI Refinement";
 "pro.translation_active" = "Translation";
+"pro.custom_refine_active" = "Custom Refinement";
 
 /* Translation Settings */
 "translation.enabled" = "Enabled Languages";
@@ -188,3 +192,22 @@
 "hotkey.reset" = "Reset to Default (⌃V)";
 "sidebar.custom_refine" = "Custom Refine";
 "pro.upgrade_hint_custom_refine" = "Upgrade to Pro to customize per-app refinement.";
+
+/* Menu Bar */
+"menubar.about %@" = "About %@";
+"menubar.settings" = "Settings...";
+"menubar.hide %@" = "Hide %@";
+"menubar.hide_others" = "Hide Others";
+"menubar.show_all" = "Show All";
+"menubar.quit %@" = "Quit %@";
+"menubar.file" = "File";
+"menubar.close_window" = "Close Window";
+"menubar.edit" = "Edit";
+"menubar.cut" = "Cut";
+"menubar.copy" = "Copy";
+"menubar.paste" = "Paste";
+"menubar.select_all" = "Select All";
+"menubar.window" = "Window";
+"menubar.minimize" = "Minimize";
+"menubar.help" = "Help";
+"menubar.website" = "VoiceLatte Website";

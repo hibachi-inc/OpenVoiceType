@@ -48,7 +48,7 @@ enum DS {
         static let primary = espresso                                            // テキスト主色
         static let secondary = darkCoffee.opacity(0.6)                           // テキスト副色
         static let accent = darkCoffee                                           // ボタン・リンク
-        static let recording = Color(red: 0.8, green: 0.25, blue: 0.2)          // 暖かみのある赤
+        static let recording = darkCoffee                                        // コーヒーブラウン
         static let processing = Color(red: 0.75, green: 0.5, blue: 0.2)         // アンバー
         static let success = Color(red: 0.35, green: 0.6, blue: 0.3)            // 落ち着いた緑
         static let error = Color(red: 0.8, green: 0.25, blue: 0.2)              // recording同色
