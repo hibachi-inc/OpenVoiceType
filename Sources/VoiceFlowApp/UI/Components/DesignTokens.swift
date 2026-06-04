@@ -37,40 +37,26 @@ enum DS {
     // MARK: - Colors
 
     enum Colors {
-        static let primary = Color.primary
-        static let secondary = Color.secondary
-        static let recording = Color.red
-        static let processing = Color.orange
-        static let success = Color.green
-        static let error = Color.red
-        static let accent = Color(nsColor: .init(name: nil) { ap in
-            ap.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-                ? NSColor(srgbRed: 0.757, green: 0.627, blue: 0.482, alpha: 1)  // #c1a07b
-                : NSColor(srgbRed: 0.435, green: 0.298, blue: 0.243, alpha: 1)  // #6f4c3e
-        })
-
-        // Coffee palette
+        // Coffee palette — base colors
         static let espresso = Color(red: 0.361, green: 0.224, blue: 0.157)      // #5c3928
         static let darkCoffee = Color(red: 0.435, green: 0.298, blue: 0.243)    // #6f4c3e
         static let latte = Color(red: 0.757, green: 0.627, blue: 0.482)         // #c1a07b
         static let cream = Color(red: 0.910, green: 0.835, blue: 0.632)         // #e8d5a1
         static let milk = Color(red: 0.949, green: 0.878, blue: 0.753)          // #f2e0c0
 
-        static let windowBg = Color(nsColor: .init(name: nil) { ap in
-            ap.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-                ? NSColor(srgbRed: 0.612, green: 0.447, blue: 0.298, alpha: 1)  // #9C724C
-                : NSColor(srgbRed: 0.949, green: 0.878, blue: 0.753, alpha: 1)  // #f2e0c0 milk
-        })
-        static let cardBg = Color(nsColor: .init(name: nil) { ap in
-            ap.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-                ? NSColor(srgbRed: 0.69, green: 0.53, blue: 0.38, alpha: 1)     // #B08760
-                : NSColor(srgbRed: 1.0, green: 0.973, blue: 0.941, alpha: 1)    // #FFF8F0
-        })
-        static let sidebarBg = Color(nsColor: .init(name: nil) { ap in
-            ap.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-                ? NSColor(srgbRed: 0.51, green: 0.36, blue: 0.23, alpha: 1)     // #825C3A
-                : NSColor(srgbRed: 0.910, green: 0.835, blue: 0.632, alpha: 1)  // #e8d5a1 cream
-        })
+        // Semantic colors — mapped to coffee palette
+        static let primary = espresso                                            // テキスト主色
+        static let secondary = darkCoffee.opacity(0.6)                           // テキスト副色
+        static let accent = darkCoffee                                           // ボタン・リンク
+        static let recording = Color(red: 0.8, green: 0.25, blue: 0.2)          // 暖かみのある赤
+        static let processing = Color(red: 0.75, green: 0.5, blue: 0.2)         // アンバー
+        static let success = Color(red: 0.35, green: 0.6, blue: 0.3)            // 落ち着いた緑
+        static let error = Color(red: 0.8, green: 0.25, blue: 0.2)              // recording同色
+
+        // Surface colors
+        static let windowBg = Color(red: 0.992, green: 0.949, blue: 0.824)      // #FDF2D2
+        static let cardBg = Color.white.opacity(0.5)                             // 半透明白
+        static let sidebarBg = darkCoffee                                        // #6f4c3e
     }
 
     // MARK: - Animation

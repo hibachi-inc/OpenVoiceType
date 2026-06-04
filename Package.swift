@@ -16,7 +16,8 @@ let package = Package(
         .executableTarget(
             name: "VoiceFlowApp",
             dependencies: ["VoiceFlowProtocol"],
-            path: "Sources/VoiceFlowApp"
+            path: "Sources/VoiceFlowApp",
+            resources: [.process("Resources")]
         ),
         .executableTarget(
             name: "VoiceFlowSTT",

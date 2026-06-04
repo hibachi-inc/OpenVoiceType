@@ -24,11 +24,8 @@ final class MainWindowController {
         window.title = "OpenVoiceText"
         window.titlebarAppearsTransparent = true
         window.toolbarStyle = .unified
-        window.backgroundColor = NSColor(name: nil) { ap in
-            ap.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-                ? NSColor(srgbRed: 0.612, green: 0.447, blue: 0.298, alpha: 1)
-                : NSColor(srgbRed: 0.949, green: 0.878, blue: 0.753, alpha: 1)
-        }
+        window.appearance = NSAppearance(named: .aqua)
+        window.backgroundColor = NSColor(srgbRed: 0.992, green: 0.949, blue: 0.824, alpha: 1)
         window.contentView = hosting
         window.center()
         window.isReleasedWhenClosed = false

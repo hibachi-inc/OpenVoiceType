@@ -72,6 +72,8 @@ struct MainWindowView: View {
             .listStyle(.sidebar)
             .scrollContentBackground(.hidden)
             .background(DS.Colors.sidebarBg)
+            .foregroundStyle(.white)
+            .environment(\.colorScheme, .dark)
             .navigationSplitViewColumnWidth(min: 160, ideal: 180, max: 220)
         } detail: {
             Group {
