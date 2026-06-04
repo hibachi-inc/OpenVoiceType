@@ -13,7 +13,7 @@ struct TranslationSettingsView: View {
                 Section {
                     Label("pro.upgrade_hint_translate", systemImage: "lock.fill")
                         .font(DS.Font.caption)
-                        .foregroundStyle(DS.Colors.accent)
+                        .foregroundStyle(DS.Colors.cream)
                 }
             }
 

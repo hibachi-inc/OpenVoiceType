@@ -43,22 +43,33 @@ enum DS {
         static let processing = Color.orange
         static let success = Color.green
         static let error = Color.red
-        static let accent = Color.accentColor
+        static let accent = Color(nsColor: .init(name: nil) { ap in
+            ap.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                ? NSColor(srgbRed: 0.757, green: 0.627, blue: 0.482, alpha: 1)  // #c1a07b
+                : NSColor(srgbRed: 0.435, green: 0.298, blue: 0.243, alpha: 1)  // #6f4c3e
+        })
+
+        // Coffee palette
+        static let espresso = Color(red: 0.361, green: 0.224, blue: 0.157)      // #5c3928
+        static let darkCoffee = Color(red: 0.435, green: 0.298, blue: 0.243)    // #6f4c3e
+        static let latte = Color(red: 0.757, green: 0.627, blue: 0.482)         // #c1a07b
+        static let cream = Color(red: 0.910, green: 0.835, blue: 0.632)         // #e8d5a1
+        static let milk = Color(red: 0.949, green: 0.878, blue: 0.753)          // #f2e0c0
 
         static let windowBg = Color(nsColor: .init(name: nil) { ap in
             ap.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-                ? NSColor(srgbRed: 0.098, green: 0.082, blue: 0.071, alpha: 1)  // #191412
-                : NSColor(srgbRed: 0.969, green: 0.957, blue: 0.941, alpha: 1)  // #F7F4F0
+                ? NSColor(srgbRed: 0.612, green: 0.447, blue: 0.298, alpha: 1)  // #9C724C
+                : NSColor(srgbRed: 0.949, green: 0.878, blue: 0.753, alpha: 1)  // #f2e0c0 milk
         })
         static let cardBg = Color(nsColor: .init(name: nil) { ap in
             ap.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-                ? NSColor(srgbRed: 0.145, green: 0.125, blue: 0.114, alpha: 1)  // #25201D
-                : NSColor(srgbRed: 1.0, green: 0.992, blue: 0.98, alpha: 1)     // #FFFDFB
+                ? NSColor(srgbRed: 0.69, green: 0.53, blue: 0.38, alpha: 1)     // #B08760
+                : NSColor(srgbRed: 1.0, green: 0.973, blue: 0.941, alpha: 1)    // #FFF8F0
         })
         static let sidebarBg = Color(nsColor: .init(name: nil) { ap in
             ap.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-                ? NSColor(srgbRed: 0.075, green: 0.063, blue: 0.055, alpha: 1)  // #13100E
-                : NSColor(srgbRed: 0.933, green: 0.914, blue: 0.89, alpha: 1)   // #EDE9E3
+                ? NSColor(srgbRed: 0.51, green: 0.36, blue: 0.23, alpha: 1)     // #825C3A
+                : NSColor(srgbRed: 0.910, green: 0.835, blue: 0.632, alpha: 1)  // #e8d5a1 cream
         })
     }
 

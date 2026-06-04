@@ -39,23 +39,28 @@ struct AboutView: View {
                 Link(destination: URL(string: "https://koeri.app/")!) {
                     Label("about.website", systemImage: "globe")
                 }
+                .foregroundStyle(DS.Colors.cream)
                 #else
                 Link(destination: URL(string: "https://github.com/hibachi-inc/OpenVoiceText")!) {
                     Label("about.github", systemImage: "link")
                 }
+                .foregroundStyle(DS.Colors.cream)
                 #endif
 
                 Link(destination: URL(string: "https://github.com/hibachi-inc/OpenVoiceText/issues")!) {
                     Label("about.bug_report", systemImage: "ladybug")
                 }
+                .foregroundStyle(DS.Colors.cream)
 
                 Link(destination: URL(string: "https://x.com/tanakaisworking")!) {
                     Label("about.x_account", systemImage: "at")
                 }
+                .foregroundStyle(DS.Colors.cream)
 
                 Link(destination: URL(string: "https://rekinote.app/")!) {
                     Label("about.reki", systemImage: "doc.richtext")
                 }
+                .foregroundStyle(DS.Colors.cream)
             }
 
             #if !PROFEATURES
