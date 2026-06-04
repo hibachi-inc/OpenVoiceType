@@ -66,6 +66,10 @@ struct FloatingHUDView: View {
                     .foregroundStyle(.white.opacity(0.25))
                     .fixedSize()
             }
+
+            if status == .copied {
+                PasteHint()
+            }
         }
         .padding(.horizontal, DS.Spacing.md)
         .padding(.vertical, 8)
@@ -158,6 +162,31 @@ struct SuccessRing: View {
                     opacity = 0
                 }
             }
+    }
+}
+
+// MARK: - Paste hint for clipboard mode
+
+struct PasteHint: View {
+    @State private var appeared = false
+
+    var body: some View {
+        HStack(spacing: 3) {
+            Text("⌘V")
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(.white.opacity(0.2))
+                .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+        }
+        .opacity(appeared ? 1 : 0)
+        .offset(x: appeared ? 0 : 8)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.3).delay(0.15)) {
+                appeared = true
+            }
+        }
     }
 }
 

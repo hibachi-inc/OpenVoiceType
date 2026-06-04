@@ -38,7 +38,7 @@ final class FloatingHUD: HUDProtocol {
         status = .copied
         transcript = text
         updateContent()
-        scheduleAutoHide(after: .seconds(2))
+        scheduleAutoHide(after: .seconds(3))
     }
 
     func showInserted(text: String) {
