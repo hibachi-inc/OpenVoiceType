@@ -138,15 +138,19 @@ struct GeneralSettingsView: View {
 
             #if DIRECT
             Section("general.output_method") {
-                Picker("general.output_method", selection: $prefs.useDirectPaste) {
-                    Text("general.output_method.direct").tag(true)
-                    Text("general.output_method.clipboard").tag(false)
+                HStack {
+                    Image(systemName: accessibilityGranted ? "text.cursor" : "doc.on.clipboard")
+                        .foregroundStyle(accessibilityGranted ? DS.Colors.success : DS.Colors.accent)
+                        .font(.system(size: 14))
+                    Text(accessibilityGranted
+                        ? String(localized: "general.output_method.direct")
+                        : String(localized: "general.output_method.clipboard"))
+                        .font(DS.Font.bodyMedium)
                 }
-                .pickerStyle(.radioGroup)
 
-                Text(prefs.useDirectPaste
+                Text(accessibilityGranted
                     ? String(localized: "general.output_method.direct_desc")
-                    : String(localized: "general.output_method.clipboard_desc"))
+                    : String(localized: "general.output_method.clipboard_auto_desc"))
                     .font(DS.Font.caption)
                     .foregroundStyle(DS.Colors.secondary)
             }

@@ -1,6 +1,7 @@
 import Foundation
 import Speech
 import AVFoundation
+@preconcurrency import ApplicationServices
 import VoiceFlowProtocol
 
 @MainActor
@@ -291,7 +292,14 @@ final class RecordingCoordinator {
 
             guard !Task.isCancelled else { return }
 
-            let injector = prefs.useDirectPaste ? directInjector : clipboardInjector
+            let canDirectPaste: Bool
+            #if DIRECT
+            canDirectPaste = AXIsProcessTrusted()
+            #else
+            canDirectPaste = false
+            #endif
+
+            let injector = canDirectPaste ? directInjector : clipboardInjector
             injector.inject(refined)
             session.transition(.refinementDone)
 
@@ -304,7 +312,7 @@ final class RecordingCoordinator {
 
             if timedOut {
                 hud.showError(String(localized: "error.refinement_timeout"))
-            } else if prefs.useDirectPaste {
+            } else if canDirectPaste {
                 hud.showInserted(text: refined)
             } else {
                 hud.showCopied(text: refined)

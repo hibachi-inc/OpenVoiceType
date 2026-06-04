@@ -184,3 +184,4 @@
 /* Errors */
 "error.stt_connection_lost" = "音声認識サービスとの接続が切れました。";
 "error.refinement_timeout" = "整形をスキップしました (タイムアウト)";
+"general.output_method.clipboard_auto_desc" = "アクセシビリティ権限が未設定です。テキストはクリップボードにコピーされます（⌘Vでペースト）。権限を付与するとカーソル位置に自動挿入されます。";

@@ -184,3 +184,4 @@
 /* Errors */
 "error.stt_connection_lost" = "Speech service connection lost.";
 "error.refinement_timeout" = "Refinement skipped (timeout)";
+"general.output_method.clipboard_auto_desc" = "Accessibility not enabled. Text is copied to clipboard — press ⌘V to paste. Grant accessibility permission to enable auto-insert at cursor.";
