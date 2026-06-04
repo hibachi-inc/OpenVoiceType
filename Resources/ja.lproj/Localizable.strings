@@ -19,9 +19,10 @@
 /* Sidebar */
 "sidebar.general" = "基本設定";
 "sidebar.hotkey" = "ショートカット";
-"sidebar.translation" = "翻訳";
+"sidebar.translation" = "クイック翻訳";
 "sidebar.pro" = "Pro";
-"sidebar.history" = "履歴";
+"sidebar.history" = "音声入力 / 履歴";
+"sidebar.voice_history" = "音声入力履歴";
 "sidebar.about" = "アプリについて";
 
 /* General Settings */
@@ -38,6 +39,8 @@
 "general.locale.fr" = "フランス語";
 "general.locale.es" = "スペイン語";
 "general.on_device" = "デバイス上で処理されます。音声がサーバーに送信されることはありません。";
+"general.mute_other_audio" = "録音中は他の音声をミュート";
+"general.mute_other_audio_desc" = "音声入力中、音楽や他のアプリの音量を自動で下げます。";
 "general.stt_engine" = "認識エンジン";
 "general.stt_engine.auto" = "高精度（macOS 26+）";
 "general.stt_engine.auto_desc" = "";
@@ -155,7 +158,7 @@
 "pro.ai_refinement_active" = "AI 整形";
 "pro.translation_active" = "翻訳";
 "pro.custom_refine_active" = "カスタム整形";
-"pro.feature_translation" = "多言語翻訳";
+"pro.feature_translation" = "クイック多言語翻訳";
 "pro.feature_lang_shortcuts" = "言語ごとのショートカットキー";
 "pro.feature_custom_refine" = "アプリ別カスタム整形プロンプト";
 
@@ -177,7 +180,7 @@
 
 /* Model Download */
 "general.model.checking" = "モデルの状態を確認中...";
-"general.model.installed" = "AIモデル準備完了";
+"general.model.installed" = "高精度モデル利用可能";
 "general.model.not_installed" = "AIモデル未ダウンロード";
 "general.model.download" = "ダウンロード";
 "general.model.downloading %lld" = "ダウンロード中... %lld%%";

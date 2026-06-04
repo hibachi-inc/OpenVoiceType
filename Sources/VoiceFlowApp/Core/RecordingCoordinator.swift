@@ -1,6 +1,7 @@
 import Foundation
 import Speech
 import AVFoundation
+import CoreAudio
 @preconcurrency import ApplicationServices
 import VoiceFlowProtocol
 
@@ -145,6 +146,7 @@ final class RecordingCoordinator {
     }
 
     func disconnect() {
+        deactivateMute()
         stopTask?.cancel()
         stopTask = nil
         cancelTask?.cancel()
@@ -215,6 +217,7 @@ final class RecordingCoordinator {
 
         session.transition(.startRequested)
         currentTranscript = ""
+        activateMute()
         syncState()
         hud.showListening()
         onStateChanged?()
@@ -242,6 +245,7 @@ final class RecordingCoordinator {
 
             if rawTranscript.isEmpty {
                 session.transition(.refinementDone)
+                deactivateMute()
                 hud.hide()
                 intentionalDisconnect = true
                 sttClient.disconnect()
@@ -310,6 +314,8 @@ final class RecordingCoordinator {
                 category: refinerContext[RefinerContextKey.category] ?? "generic"
             )
 
+            deactivateMute()
+
             if timedOut {
                 hud.showError(String(localized: "error.refinement_timeout"))
             } else if canDirectPaste {
@@ -326,6 +332,7 @@ final class RecordingCoordinator {
 
     private func cancelRecording() {
         FileLogger.log("cancelRecording called")
+        deactivateMute()
         session.transition(.cancel)
         let pendingStopTask = stopTask
         stopTask?.cancel()
@@ -361,6 +368,7 @@ final class RecordingCoordinator {
 
     private func handleError(_ message: String) {
         guard session.state.isActive else { return }
+        deactivateMute()
         stopTask?.cancel()
         stopTask = nil
         session.transition(.failed(message))
@@ -376,6 +384,66 @@ final class RecordingCoordinator {
             syncState()
             onStateChanged?()
         }
+    }
+
+    // MARK: - System Audio Mute
+
+    private var wasMutedBeforeRecording = false
+
+    private func activateMute() {
+        guard prefs.muteOtherAudio else { return }
+        wasMutedBeforeRecording = Self.isSystemOutputMuted()
+        if !wasMutedBeforeRecording {
+            Self.setSystemOutputMute(true)
+        }
+    }
+
+    private func deactivateMute() {
+        guard prefs.muteOtherAudio else { return }
+        if !wasMutedBeforeRecording {
+            Self.setSystemOutputMute(false)
+        }
+    }
+
+    private nonisolated static func defaultOutputDeviceID() -> AudioDeviceID? {
+        var deviceID = AudioDeviceID(0)
+        var size = UInt32(MemoryLayout<AudioDeviceID>.size)
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        guard AudioObjectGetPropertyData(
+            AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &size, &deviceID
+        ) == noErr else { return nil }
+        return deviceID
+    }
+
+    private nonisolated static func isSystemOutputMuted() -> Bool {
+        guard let deviceID = defaultOutputDeviceID() else { return false }
+        var muted: UInt32 = 0
+        var size = UInt32(MemoryLayout<UInt32>.size)
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyMute,
+            mScope: kAudioDevicePropertyScopeOutput,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        guard AudioObjectGetPropertyData(deviceID, &address, 0, nil, &size, &muted) == noErr else { return false }
+        return muted != 0
+    }
+
+    private nonisolated static func setSystemOutputMute(_ mute: Bool) {
+        guard let deviceID = defaultOutputDeviceID() else { return }
+        var muteValue: UInt32 = mute ? 1 : 0
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyMute,
+            mScope: kAudioDevicePropertyScopeOutput,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        AudioObjectSetPropertyData(
+            deviceID, &address, 0, nil,
+            UInt32(MemoryLayout<UInt32>.size), &muteValue
+        )
     }
 
     private func refineIfEnabled(_ text: String, context: [String: String]) async -> (String, Bool) {

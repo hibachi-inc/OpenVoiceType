@@ -19,10 +19,10 @@ enum SidebarSection: String, Identifiable {
         case .hotkey: String(localized: "sidebar.hotkey")
         #if PROFEATURES
         case .pro: String(localized: "sidebar.pro")
-        case .translation: String(localized: "sidebar.translation")
+        case .translation: Bundle.main.localizedString(forKey: "sidebar.translation", value: "Quick Translate", table: nil)
         case .customRefine: String(localized: "sidebar.custom_refine")
         #endif
-        case .history: String(localized: "sidebar.history")
+        case .history: Bundle.main.localizedString(forKey: "sidebar.voice_history", value: "Voice History", table: nil)
         case .about: String(localized: "sidebar.about")
         }
     }

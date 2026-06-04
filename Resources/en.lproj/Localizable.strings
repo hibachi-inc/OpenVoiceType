@@ -19,9 +19,10 @@
 /* Sidebar */
 "sidebar.general" = "Preferences";
 "sidebar.hotkey" = "Hotkey";
-"sidebar.translation" = "Translation";
+"sidebar.translation" = "Quick Translate";
 "sidebar.pro" = "Pro";
-"sidebar.history" = "History";
+"sidebar.history" = "Voice Input / History";
+"sidebar.voice_history" = "Voice History";
 "sidebar.about" = "About";
 
 /* General Settings */
@@ -38,6 +39,8 @@
 "general.locale.fr" = "French";
 "general.locale.es" = "Spanish";
 "general.on_device" = "On-device recognition. No audio is sent to any server.";
+"general.mute_other_audio" = "Reduce other audio while recording";
+"general.mute_other_audio_desc" = "Lowers the volume of music and other apps during voice input.";
 "general.stt_engine" = "Recognition Engine";
 "general.stt_engine.auto" = "Enhanced (macOS 26+)";
 "general.stt_engine.auto_desc" = "";
@@ -139,7 +142,7 @@
 "pro.context_aware" = "Context-aware formatting (chat, email, code...)";
 "pro.multi_lang" = "Multi-language translation";
 "pro.per_lang_shortcuts" = "Translate with per-language shortcuts";
-"pro.feature_translation" = "Multi-language translation";
+"pro.feature_translation" = "Quick multi-language translation";
 "pro.feature_lang_shortcuts" = "Per-language shortcut keys";
 "pro.feature_custom_refine" = "Per-app custom refinement prompts";
 "pro.upgrade %@" = "Upgrade for %@";

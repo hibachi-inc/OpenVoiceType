@@ -50,6 +50,10 @@ final class PreferencesStore {
         didSet { defaults.set(useDirectPaste, forKey: "useDirectPaste") }
     }
 
+    var muteOtherAudio: Bool {
+        didSet { defaults.set(muteOtherAudio, forKey: "muteOtherAudio") }
+    }
+
     #if PROFEATURES
     var translationLanguages: [TranslationLanguage] {
         didSet { saveTranslationLanguages() }
@@ -81,6 +85,7 @@ final class PreferencesStore {
         #else
         useDirectPaste = false
         #endif
+        muteOtherAudio = defaults.bool(forKey: "muteOtherAudio")
         #if PROFEATURES
         translationLanguages = Self.loadTranslationLanguages(from: defaults)
         #endif

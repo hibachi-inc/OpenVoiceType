@@ -44,7 +44,7 @@ struct HistoryView: View {
                 }
             }
         }
-        .navigationTitle(String(localized: "sidebar.history"))
+        .navigationTitle(Bundle.main.localizedString(forKey: "sidebar.voice_history", value: "Voice History", table: nil))
         .toolbar {
             if !store.entries.isEmpty {
                 ToolbarItem {

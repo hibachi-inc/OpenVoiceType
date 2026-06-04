@@ -71,6 +71,11 @@ struct GeneralSettingsView: View {
                 Text("general.on_device")
                     .font(DS.Font.caption)
                     .foregroundStyle(DS.Colors.secondary)
+
+                Toggle("general.mute_other_audio", isOn: $prefs.muteOtherAudio)
+                Text("general.mute_other_audio_desc")
+                    .font(DS.Font.caption)
+                    .foregroundStyle(DS.Colors.secondary)
             }
 
 
