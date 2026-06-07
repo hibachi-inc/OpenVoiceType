@@ -85,6 +85,7 @@
 "refinement.default_prompt_desc" = "This instruction is applied when AI refinement is enabled.";
 "refinement.default_prompt_desc_pro" = "Applied to all apps unless overridden by a per-app instruction below.";
 "refinement.default_prompt.placeholder" = "e.g. Always use polite language";
+"refinement.default_prompt.initial" = "This is voice input. If there seem to be transcription errors, please understand the meaning and correct them. If no corrections are needed, please output it as is.";
 "refinement.suggestion.correct" = "Correct";
 "refinement.suggestion.correct_prompt" = "Fix transcription errors by understanding the intended meaning";
 "refinement.suggestion.polite" = "Polite";

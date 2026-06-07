@@ -80,7 +80,8 @@ final class PreferencesStore {
         } else {
             appLanguage = "system"
         }
-        defaultPrompt = defaults.string(forKey: "defaultPrompt") ?? ""
+        defaultPrompt = defaults.string(forKey: "defaultPrompt")
+            ?? Bundle.main.localizedString(forKey: "refinement.default_prompt.initial", value: "", table: nil)
         #if PROFEATURES
         appPrompts = (defaults.dictionary(forKey: "appPrompts") as? [String: String]) ?? [:]
         #endif

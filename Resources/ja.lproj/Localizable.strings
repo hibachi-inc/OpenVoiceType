@@ -85,6 +85,7 @@
 "refinement.default_prompt_desc" = "AI 整形時にこの指示が適用されます。";
 "refinement.default_prompt_desc_pro" = "アプリ別の指示がない場合に適用されます。";
 "refinement.default_prompt.placeholder" = "例: 常に丁寧語を使う";
+"refinement.default_prompt.initial" = "音声入力のため、誤認識と思われる箇所は意味を汲み取って正しい言葉に修正してください。修正不要な場合はそのまま出力してください。";
 "refinement.suggestion.correct" = "補正";
 "refinement.suggestion.correct_prompt" = "音声入力のため意味を汲み取って正しい言葉に修正して";
 "refinement.suggestion.polite" = "丁寧";
