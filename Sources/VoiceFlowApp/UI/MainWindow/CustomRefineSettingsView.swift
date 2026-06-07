@@ -86,26 +86,30 @@ private struct PromptSuggestion: Identifiable {
     let label: String
     let prompt: String
 
+    private static func loc(_ key: String) -> String {
+        Bundle.main.localizedString(forKey: key, value: nil, table: nil)
+    }
+
     static let all: [PromptSuggestion] = [
         PromptSuggestion(
             id: "correct",
-            label: String(localized: "refinement.suggestion.correct"),
-            prompt: String(localized: "refinement.suggestion.correct_prompt")
+            label: loc("refinement.suggestion.correct"),
+            prompt: loc("refinement.suggestion.correct_prompt")
         ),
         PromptSuggestion(
             id: "polite",
-            label: String(localized: "refinement.suggestion.polite"),
-            prompt: String(localized: "refinement.suggestion.polite_prompt")
+            label: loc("refinement.suggestion.polite"),
+            prompt: loc("refinement.suggestion.polite_prompt")
         ),
         PromptSuggestion(
             id: "concise",
-            label: String(localized: "refinement.suggestion.concise"),
-            prompt: String(localized: "refinement.suggestion.concise_prompt")
+            label: loc("refinement.suggestion.concise"),
+            prompt: loc("refinement.suggestion.concise_prompt")
         ),
         PromptSuggestion(
             id: "translate",
-            label: String(localized: "refinement.suggestion.translate"),
-            prompt: String(localized: "refinement.suggestion.translate_prompt")
+            label: loc("refinement.suggestion.translate"),
+            prompt: loc("refinement.suggestion.translate_prompt")
         ),
     ]
 }
