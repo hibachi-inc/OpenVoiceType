@@ -93,14 +93,19 @@ private struct PromptSuggestion: Identifiable {
             prompt: String(localized: "refinement.suggestion.correct_prompt")
         ),
         PromptSuggestion(
+            id: "polite",
+            label: String(localized: "refinement.suggestion.polite"),
+            prompt: String(localized: "refinement.suggestion.polite_prompt")
+        ),
+        PromptSuggestion(
+            id: "concise",
+            label: String(localized: "refinement.suggestion.concise"),
+            prompt: String(localized: "refinement.suggestion.concise_prompt")
+        ),
+        PromptSuggestion(
             id: "translate",
             label: String(localized: "refinement.suggestion.translate"),
             prompt: String(localized: "refinement.suggestion.translate_prompt")
-        ),
-        PromptSuggestion(
-            id: "emoji",
-            label: String(localized: "refinement.suggestion.emoji"),
-            prompt: String(localized: "refinement.suggestion.emoji_prompt")
         ),
     ]
 }

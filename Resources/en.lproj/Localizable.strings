@@ -86,11 +86,13 @@
 "refinement.default_prompt_desc_pro" = "Applied to all apps unless overridden by a per-app instruction below.";
 "refinement.default_prompt.placeholder" = "e.g. Always use polite language";
 "refinement.suggestion.correct" = "Correct";
-"refinement.suggestion.correct_prompt" = "Fix misrecognitions from voice input and correct to proper words";
+"refinement.suggestion.correct_prompt" = "Fix transcription errors by understanding the intended meaning";
+"refinement.suggestion.polite" = "Polite";
+"refinement.suggestion.polite_prompt" = "Use polite, professional language";
+"refinement.suggestion.concise" = "Concise";
+"refinement.suggestion.concise_prompt" = "Keep it concise. Remove filler and redundancy";
 "refinement.suggestion.translate" = "Translate";
 "refinement.suggestion.translate_prompt" = "Translate to Japanese";
-"refinement.suggestion.emoji" = "Decorate";
-"refinement.suggestion.emoji_prompt" = "Decorate with emojis";
 
 "refinement.app_prompts" = "Per-App Refinement";
 "refinement.app_prompts_desc" = "Customize how text is refined for each app. Overrides the default instruction above.";

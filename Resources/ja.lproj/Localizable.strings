@@ -87,10 +87,12 @@
 "refinement.default_prompt.placeholder" = "例: 常に丁寧語を使う";
 "refinement.suggestion.correct" = "補正";
 "refinement.suggestion.correct_prompt" = "音声入力のため意味を汲み取って正しい言葉に修正して";
+"refinement.suggestion.polite" = "丁寧";
+"refinement.suggestion.polite_prompt" = "丁寧語で整えて。ですます調に統一";
+"refinement.suggestion.concise" = "簡潔";
+"refinement.suggestion.concise_prompt" = "要点だけ残して簡潔にまとめて";
 "refinement.suggestion.translate" = "翻訳";
 "refinement.suggestion.translate_prompt" = "英語に翻訳して";
-"refinement.suggestion.emoji" = "装飾";
-"refinement.suggestion.emoji_prompt" = "絵文字で装飾して";
 
 "refinement.app_prompts" = "アプリ別の整形";
 "refinement.app_prompts_desc" = "アプリごとにテキスト整形の指示をカスタマイズできます。上のデフォルト指示より優先されます。";
