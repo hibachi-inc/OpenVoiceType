@@ -199,7 +199,7 @@ struct RecordingCoordinatorTests {
         coordinator.toggle() // stop → processing (stopTask starts, awaiting slow XPC)
         #expect(coordinator.session.state == .processing(coordinator.session.state.sessionID!))
 
-        coordinator.toggle() // cancel during processing
+        coordinator.cancel() // cancel during processing
         try? await Task.sleep(for: .milliseconds(100))
 
         #expect(hud.states.contains("hide"))
@@ -219,7 +219,7 @@ struct RecordingCoordinatorTests {
         // Session 1: start → stop → cancel during processing
         coordinator.toggle()
         coordinator.toggle()
-        coordinator.toggle() // cancel
+        coordinator.cancel() // explicit cancel
         try? await Task.sleep(for: .milliseconds(500))
 
         #expect(coordinator.session.state == .idle)
@@ -239,6 +239,24 @@ struct RecordingCoordinatorTests {
         #expect(coordinator.session.state == .idle)
     }
 
+    @Test func toggleDuringProcessingQueuesNextRecording() async {
+        let (coordinator, stt, refiner, _, injector, _) = makeCoordinator()
+        stt.transcriptToReturn = "First"
+        stt.stopDelay = .milliseconds(200)
+        refiner.refinedToReturn = "First refined"
+
+        coordinator.toggle() // start
+        coordinator.toggle() // stop → processing
+        coordinator.toggle() // toggle during processing → queue next
+
+        // First processing should complete and inject
+        try? await Task.sleep(for: .milliseconds(400))
+        #expect(injector.injectedText == "First refined")
+
+        // Auto-started new recording
+        #expect(coordinator.isRecording)
+    }
+
     @Test func safetyTimerForcesResetWhenCancelHangs() async {
         let (coordinator, stt, _, hud, _, _) = makeCoordinator()
         stt.transcriptToReturn = "Hello"
@@ -246,7 +264,7 @@ struct RecordingCoordinatorTests {
 
         coordinator.toggle() // start
         coordinator.toggle() // stop → processing
-        coordinator.toggle() // cancel during processing
+        coordinator.cancel() // explicit cancel during processing
 
         #expect(hud.states.contains("hide"))
 
@@ -263,7 +281,7 @@ struct RecordingCoordinatorTests {
 
         coordinator.toggle() // start
         coordinator.toggle() // stop → processing
-        coordinator.toggle() // cancel
+        coordinator.cancel() // explicit cancel
 
         coordinator.disconnect()
 

@@ -34,6 +34,7 @@ final class RecordingCoordinator {
     private(set) var activeEngine: String = ""
     private var enhancedCrashed = false
     private var intentionalDisconnect = false
+    private var pendingStartAfterProcessing = false
     private let skipPermissionCheck: Bool
 
     private func syncState() {
@@ -67,7 +68,14 @@ final class RecordingCoordinator {
     }
 
     func setup() {
-        hud.onTap = { [weak self] in self?.toggle() }
+        hud.onTap = { [weak self] in
+            guard let self else { return }
+            if case .processing = self.session.state {
+                self.cancel()
+            } else {
+                self.toggle()
+            }
+        }
         sttClient.onTranscript = { [weak self] text in
             guard let self, case .recording = self.session.state else { return }
             self.currentTranscript = text
@@ -119,6 +127,7 @@ final class RecordingCoordinator {
     }
 
     func cancel() {
+        pendingStartAfterProcessing = false
         guard session.state.isActive else { return }
         cancelRecording()
     }
@@ -137,8 +146,11 @@ final class RecordingCoordinator {
             startRecording()
         case .recording:
             stopRecording()
-        case .starting, .processing:
+        case .starting:
             cancelRecording()
+        case .processing:
+            pendingStartAfterProcessing.toggle()
+            FileLogger.log("handleToggle: processing, pendingStart=\(pendingStartAfterProcessing)")
         default:
             FileLogger.log("handleToggle: default branch, no action")
             break
@@ -146,6 +158,7 @@ final class RecordingCoordinator {
     }
 
     func disconnect() {
+        pendingStartAfterProcessing = false
         deactivateMute()
         stopTask?.cancel()
         stopTask = nil
@@ -334,6 +347,12 @@ final class RecordingCoordinator {
             sttClient.disconnect()
             syncState()
             onStateChanged?()
+
+            if pendingStartAfterProcessing {
+                pendingStartAfterProcessing = false
+                FileLogger.log("stopRecording: pendingStart → auto-starting new recording")
+                startRecording()
+            }
         }
     }
 
