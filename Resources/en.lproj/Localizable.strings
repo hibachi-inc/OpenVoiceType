@@ -155,7 +155,7 @@
 "pro.enter_license" = "License Key";
 "pro.enter_license.placeholder" = "VLATTE_XXXX-XXXX-XXXX-XXXX";
 "pro.activate" = "Activate";
-"pro.deactivate" = "Deactivate License";
+"pro.deactivate" = "Deactivate this Mac";
 "pro.buy_license" = "Buy License";
 "pro.activated" = "Pro Active";
 "pro.invalid_key" = "Invalid license key.";

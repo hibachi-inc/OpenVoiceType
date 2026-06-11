@@ -152,7 +152,7 @@
 "pro.enter_license" = "ライセンスキー";
 "pro.enter_license.placeholder" = "VLATTE_XXXX-XXXX-XXXX-XXXX";
 "pro.activate" = "アクティベート";
-"pro.deactivate" = "ライセンスを解除";
+"pro.deactivate" = "このMacの登録を解除";
 "pro.buy_license" = "ライセンスを購入";
 "pro.activated" = "Pro アクティブ";
 "pro.invalid_key" = "無効なライセンスキーです。";
