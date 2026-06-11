@@ -8,6 +8,25 @@ struct AboutView: View {
 
     var body: some View {
         Form {
+            #if DIRECT
+            if let newVersion = SparkleUpdater.shared.availableVersion {
+                Section {
+                    HStack {
+                        Image(systemName: "arrow.down.circle.fill")
+                            .foregroundStyle(DS.Colors.accent)
+                        Text(String(format: NSLocalizedString("update.available %@", comment: ""), newVersion))
+                            .font(DS.Font.body)
+                        Spacer()
+                        Button(String(localized: "menubar.check_updates")) {
+                            SparkleUpdater.shared.checkForUpdates(nil)
+                        }
+                        .controlSize(.small)
+                    }
+                    .padding(.vertical, DS.Spacing.xs)
+                }
+            }
+            #endif
+
             Section {
                 HStack(spacing: DS.Spacing.lg) {
                     Image(nsImage: NSApp.applicationIconImage)

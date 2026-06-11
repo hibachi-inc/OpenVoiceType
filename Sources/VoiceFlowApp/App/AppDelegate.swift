@@ -15,7 +15,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var translateHotkeys: [GlobalHotkey] = []
     #endif
     #if DIRECT
-    private let sparkleUpdater = SparkleUpdater()
+    private let sparkleUpdater = SparkleUpdater.shared
     #endif
     private var pttGlobalMonitor: Any?
     private var pttLocalMonitor: Any?

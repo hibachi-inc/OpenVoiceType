@@ -2,11 +2,12 @@
 @preconcurrency import Sparkle
 import UserNotifications
 
-/// Thin wrapper around Sparkle for DMG auto-update.
-/// MAS builds use App Store updates — this file is compiled out via #if DIRECT.
 @MainActor
+@Observable
 final class SparkleUpdater: NSObject {
+    static let shared = SparkleUpdater()
     private var controller: SPUStandardUpdaterController?
+    private(set) var availableVersion: String?
 
     override init() {
         super.init()
@@ -53,6 +54,7 @@ extension SparkleUpdater: SPUUpdaterDelegate {
     nonisolated func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
         let version = item.displayVersionString
         Task { @MainActor in
+            availableVersion = version
             postUpdateNotification(version: version)
         }
     }
