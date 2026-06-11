@@ -7,8 +7,9 @@ import Carbon.HIToolbox
 @MainActor
 struct AccessibilityInjector: TextInjecting {
     private enum Timing {
-        static let preWriteDelay: TimeInterval  = 0.08    // 80ms — wait for input source switch + pasteboard write
-        static let postPasteDelay: TimeInterval = 0.20    // 200ms — wait for target app to process paste
+        static let clipboardSettleDelay: TimeInterval = 0.10  // 100ms — buffer after verified clipboard write
+        static let pollInterval: TimeInterval = 0.05          // 50ms — AX polling interval
+        static let maxRestoreWait: TimeInterval = 1.5         // 1.5s — fallback if AX can't detect consumption
     }
 
     func inject(_ text: String) {
@@ -18,7 +19,6 @@ struct AccessibilityInjector: TextInjecting {
     private static func performInjection(_ text: String) {
         let pasteboard = NSPasteboard.general
         let savedItems = savePasteboard(pasteboard)
-        let savedChangeCount = pasteboard.changeCount
 
         let savedInputSource = TISCopyCurrentKeyboardInputSource().takeRetainedValue()
         switchToASCIIInputSourceIfNeeded()
@@ -26,15 +26,94 @@ struct AccessibilityInjector: TextInjecting {
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + Timing.preWriteDelay) {
-            postPaste()
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + Timing.preWriteDelay + Timing.postPasteDelay) {
-            if pasteboard.changeCount == savedChangeCount + 1 {
-                restorePasteboard(pasteboard, items: savedItems)
-            }
+        // Capture changeCount AFTER our write — this is the baseline for external-write detection
+        let writeChangeCount = pasteboard.changeCount
+
+        // Verify the write landed
+        guard pasteboard.string(forType: .string) == text else {
             TISSelectInputSource(savedInputSource)
+            return
         }
+
+        // Wait for clipboard to settle, then paste
+        DispatchQueue.main.asyncAfter(deadline: .now() + Timing.clipboardSettleDelay) {
+            guard pasteboard.string(forType: .string) == text else {
+                TISSelectInputSource(savedInputSource)
+                return
+            }
+            postPaste()
+
+            // Poll for paste consumption, then restore clipboard
+            pollAndRestore(
+                text: text,
+                pasteboard: pasteboard,
+                savedItems: savedItems,
+                writeChangeCount: writeChangeCount,
+                savedInputSource: savedInputSource,
+                startTime: CFAbsoluteTimeGetCurrent()
+            )
+        }
+    }
+
+    // MARK: - Paste consumption detection
+
+    private static func pollAndRestore(
+        text: String,
+        pasteboard: NSPasteboard,
+        savedItems: [NSPasteboardItem],
+        writeChangeCount: Int,
+        savedInputSource: TISInputSource,
+        startTime: CFAbsoluteTime
+    ) {
+        let elapsed = CFAbsoluteTimeGetCurrent() - startTime
+
+        // Another process wrote to clipboard — skip restoration, still restore input source
+        if pasteboard.changeCount != writeChangeCount {
+            TISSelectInputSource(savedInputSource)
+            return
+        }
+
+        // Check if target app consumed the paste via AX
+        if focusedElementContains(text) || elapsed >= Timing.maxRestoreWait {
+            restorePasteboard(pasteboard, items: savedItems)
+            TISSelectInputSource(savedInputSource)
+            return
+        }
+
+        // Keep polling
+        DispatchQueue.main.asyncAfter(deadline: .now() + Timing.pollInterval) {
+            pollAndRestore(
+                text: text,
+                pasteboard: pasteboard,
+                savedItems: savedItems,
+                writeChangeCount: writeChangeCount,
+                savedInputSource: savedInputSource,
+                startTime: startTime
+            )
+        }
+    }
+
+    /// Check if the focused text element contains the pasted text.
+    private static func focusedElementContains(_ text: String) -> Bool {
+        let systemWide = AXUIElementCreateSystemWide()
+        var focusedRef: AnyObject?
+        guard AXUIElementCopyAttributeValue(systemWide, kAXFocusedUIElementAttribute as CFString, &focusedRef) == .success,
+              let focused = focusedRef,
+              CFGetTypeID(focused) == AXUIElementGetTypeID() else { return false }
+        let focusedElement = focused as! AXUIElement
+
+        // Secure text fields never expose their value — skip AX check
+        var roleRef: AnyObject?
+        if AXUIElementCopyAttributeValue(focusedElement, kAXRoleAttribute as CFString, &roleRef) == .success,
+           let role = roleRef as? String, role == "AXSecureTextField" {
+            return false
+        }
+
+        var valueRef: AnyObject?
+        guard AXUIElementCopyAttributeValue(focusedElement, kAXValueAttribute as CFString, &valueRef) == .success,
+              let value = valueRef as? String else { return false }
+
+        return value.contains(text)
     }
 
     // MARK: - Paste simulation
