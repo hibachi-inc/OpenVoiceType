@@ -63,11 +63,11 @@ struct AppContext: Sendable {
             axLogger.debug("siteKey: no focused window for pid \(pid)")
             return nil
         }
-        guard CFGetTypeID(windowRef!) == AXUIElementGetTypeID() else {
-            axLogger.debug("siteKey: windowRef type mismatch")
+        guard let ref = windowRef, CFGetTypeID(ref) == AXUIElementGetTypeID() else {
+            axLogger.debug("siteKey: windowRef nil or type mismatch")
             return nil
         }
-        let window = windowRef as! AXUIElement
+        let window = ref as! AXUIElement
 
         // Pass 1: address bar (most reliable source of current page URL)
         if let url = findAddressBarURL(window, maxDepth: 6) {
@@ -136,7 +136,7 @@ struct AppContext: Sendable {
         var childrenRef: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, kAXChildrenAttribute as CFString, &childrenRef) == .success,
               let children = childrenRef as? [AXUIElement] else { return nil }
-        for child in children {
+        for child in children.prefix(20) {
             if let url = findAddressBarURL(child, maxDepth: maxDepth - 1) { return url }
         }
         return nil
@@ -158,7 +158,7 @@ struct AppContext: Sendable {
         var childrenRef: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, kAXChildrenAttribute as CFString, &childrenRef) == .success,
               let children = childrenRef as? [AXUIElement] else { return nil }
-        for child in children {
+        for child in children.prefix(20) {
             if let url = findAXURL(child, maxDepth: maxDepth - 1) { return url }
         }
         return nil
