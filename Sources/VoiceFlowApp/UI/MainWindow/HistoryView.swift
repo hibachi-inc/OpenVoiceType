@@ -134,7 +134,7 @@ struct HistoryCard: View {
         VStack(alignment: .leading, spacing: DS.Spacing.sm) {
             #if PROFEATURES
             HStack {
-                Text(entry.appName)
+                Text(entry.promptKey)
                     .font(DS.Font.caption)
                     .foregroundStyle(DS.Colors.accent)
                     .padding(.horizontal, 6)

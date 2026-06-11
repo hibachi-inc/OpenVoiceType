@@ -8,16 +8,21 @@ final class HistoryEntry {
     var refinedText: String
     var appName: String
     var category: String
+    var siteDomain: String?
     var timestamp: Date
 
-    init(rawTranscript: String, refinedText: String, appName: String, category: String) {
+    init(rawTranscript: String, refinedText: String, appName: String, category: String, siteDomain: String? = nil) {
         self.id = UUID()
         self.rawTranscript = rawTranscript
         self.refinedText = refinedText
         self.appName = appName
         self.category = category
+        self.siteDomain = siteDomain
         self.timestamp = Date()
     }
+
+    /// Display key: domain for browser sites, app name otherwise
+    var promptKey: String { siteDomain ?? appName }
 }
 
 @MainActor
@@ -49,12 +54,13 @@ final class HistoryStore {
         reload()
     }
 
-    func add(rawTranscript: String, refinedText: String, appName: String, category: String) {
+    func add(rawTranscript: String, refinedText: String, appName: String, category: String, siteDomain: String? = nil) {
         let entry = HistoryEntry(
             rawTranscript: rawTranscript,
             refinedText: refinedText,
             appName: appName,
-            category: category
+            category: category,
+            siteDomain: siteDomain
         )
         context.insert(entry)
         try? context.save()

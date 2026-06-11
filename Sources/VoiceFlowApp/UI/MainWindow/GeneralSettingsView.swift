@@ -258,7 +258,7 @@ struct AppPromptEditor: View {
     @State private var promptText = ""
 
     private var knownApps: [String] {
-        Array(Set(store.entries.map(\.appName))).sorted()
+        Array(Set(store.entries.map(\.promptKey))).sorted()
     }
 
     private var configuredApps: [String] {

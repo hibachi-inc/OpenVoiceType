@@ -6,29 +6,27 @@ import UserNotifications
 /// MAS builds use App Store updates — this file is compiled out via #if DIRECT.
 @MainActor
 final class SparkleUpdater: NSObject {
-    private let controller: SPUStandardUpdaterController
+    private var controller: SPUStandardUpdaterController?
 
     override init() {
+        super.init()
         controller = SPUStandardUpdaterController(
             startingUpdater: false,
-            updaterDelegate: nil,
+            updaterDelegate: self,
             userDriverDelegate: nil
         )
-        super.init()
     }
 
-    /// Call from applicationDidFinishLaunching to start the updater after app is fully initialized.
     func start() {
         requestNotificationPermission()
-        controller.updater.delegate = self
-        controller.startUpdater()
+        controller?.startUpdater()
     }
 
     @objc func checkForUpdates(_ sender: Any?) {
-        controller.checkForUpdates(sender)
+        controller?.checkForUpdates(sender)
     }
 
-    var canCheck: Bool { controller.updater.canCheckForUpdates }
+    var canCheck: Bool { controller?.updater.canCheckForUpdates ?? false }
 
     private func requestNotificationPermission() {
         let center = UNUserNotificationCenter.current()
@@ -39,10 +37,7 @@ final class SparkleUpdater: NSObject {
         let center = UNUserNotificationCenter.current()
         let content = UNMutableNotificationContent()
         content.title = "VoiceLatte"
-        content.body = String(
-            localized: "update.available \(version)",
-            defaultValue: "Version \(version) is available. Open VoiceLatte to update."
-        )
+        content.body = String(format: NSLocalizedString("update.available %@", comment: ""), version)
         content.sound = .default
 
         let request = UNNotificationRequest(

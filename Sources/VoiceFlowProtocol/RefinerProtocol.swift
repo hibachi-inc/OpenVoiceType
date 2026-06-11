@@ -10,6 +10,8 @@ public enum RefinerContextKey {
     public static let appName = "appName"
     public static let bundleID = "bundleID"
     public static let customPrompt = "customPrompt"
+    public static let beforeText = "beforeText"
+    public static let afterText = "afterText"
 }
 
 public enum RefinerXPCConstants {

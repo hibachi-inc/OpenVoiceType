@@ -255,16 +255,21 @@ final class RecordingCoordinator {
             }
 
             let appContext = AppContext.current
+            let effectiveCategory = appContext?.effectiveCategory ?? .generic
             var refinerContext: [String: String] = [
-                RefinerContextKey.category: appContext?.category.rawValue ?? "generic",
+                RefinerContextKey.category: effectiveCategory.rawValue,
                 RefinerContextKey.appName: appContext?.appName ?? "Unknown",
             ]
             if let bundleID = appContext?.bundleIdentifier {
                 refinerContext[RefinerContextKey.bundleID] = bundleID
             }
             #if PROFEATURES
-            if let appName = appContext?.appName,
-               let customPrompt = prefs.appPrompts[appName], !customPrompt.isEmpty {
+            if let key = appContext?.promptKey,
+               let customPrompt = prefs.appPrompts[key], !customPrompt.isEmpty {
+                refinerContext[RefinerContextKey.customPrompt] = customPrompt
+            } else if let appName = appContext?.appName,
+                      let customPrompt = prefs.appPrompts[appName], !customPrompt.isEmpty {
+                // Fallback: match by app name when no domain-specific prompt
                 refinerContext[RefinerContextKey.customPrompt] = customPrompt
             } else if !prefs.defaultPrompt.isEmpty {
                 refinerContext[RefinerContextKey.customPrompt] = prefs.defaultPrompt
@@ -312,7 +317,8 @@ final class RecordingCoordinator {
                 rawTranscript: rawTranscript,
                 refinedText: cleaned,
                 appName: refinerContext[RefinerContextKey.appName] ?? "Unknown",
-                category: refinerContext[RefinerContextKey.category] ?? "generic"
+                category: refinerContext[RefinerContextKey.category] ?? "generic",
+                siteDomain: appContext?.siteDomain
             )
 
             deactivateMute()
