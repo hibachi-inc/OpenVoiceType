@@ -70,7 +70,7 @@ final class PreferencesStore {
         hotkeyModifier = HotkeyModifier(rawValue: defaults.string(forKey: "hotkeyModifier") ?? "") ?? .control
         hotkeyKey = HotkeyKey(rawValue: defaults.string(forKey: "hotkeyKey") ?? "") ?? .v
         locale = defaults.string(forKey: "locale") ?? "system"
-        refinementMode = RefinementMode(rawValue: defaults.string(forKey: "refinementMode") ?? "") ?? .refine
+        refinementMode = RefinementMode(rawValue: defaults.string(forKey: "refinementMode") ?? "") ?? .off
         sttEngine = STTEngine(rawValue: defaults.string(forKey: "sttEngine") ?? "") ?? .enhanced
         launchAtLogin = defaults.bool(forKey: "launchAtLogin")
         if defaults.object(forKey: "appLanguageUserSet") != nil,
