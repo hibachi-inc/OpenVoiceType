@@ -222,3 +222,6 @@
 "menubar.help" = "Help";
 "menubar.check_updates" = "Check for Updates...";
 "menubar.website" = "VoiceLatte Website";
+
+/* Update Notification */
+"update.available %@" = "Version %@ is available. Open VoiceLatte to update.";

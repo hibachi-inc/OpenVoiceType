@@ -222,3 +222,6 @@
 "menubar.help" = "ヘルプ";
 "menubar.check_updates" = "アップデートを確認...";
 "menubar.website" = "VoiceLatte ウェブサイト";
+
+/* Update Notification */
+"update.available %@" = "バージョン %@ が利用可能です。VoiceLatteを開いてアップデートしてください。";
