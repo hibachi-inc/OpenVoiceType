@@ -109,6 +109,38 @@ struct GeneralSettingsView: View {
             }
             #endif
 
+            #if !PROFEATURES
+            Section("general.refinement") {
+                Picker("general.mode", selection: $prefs.refinementMode) {
+                    ForEach(RefinementMode.allCases) { mode in
+                        Text(mode.label).tag(mode)
+                    }
+                }
+                .pickerStyle(.radioGroup)
+
+                Text(prefs.refinementMode.description)
+                    .font(DS.Font.caption)
+                    .foregroundStyle(DS.Colors.secondary)
+
+                if prefs.refinementMode == .refine {
+                    TextEditor(text: $prefs.defaultPrompt)
+                        .font(DS.Font.body)
+                        .frame(height: 50)
+                        .scrollContentBackground(.hidden)
+                        .background(DS.Colors.fieldBg)
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 4)
+                                .stroke(DS.Colors.secondary.opacity(0.3))
+                        )
+
+                    Text("refinement.default_prompt_desc")
+                        .font(DS.Font.caption)
+                        .foregroundStyle(DS.Colors.secondary)
+                }
+            }
+            #endif
+
             Section("general.startup") {
                 Toggle("general.launch_at_login", isOn: $prefs.launchAtLogin)
                     .onChange(of: prefs.launchAtLogin) { syncLaunchAtLogin() }
