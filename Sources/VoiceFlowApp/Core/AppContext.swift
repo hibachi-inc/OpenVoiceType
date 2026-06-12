@@ -13,6 +13,8 @@ struct AppContext: Sendable {
     let bundleIdentifier: String?
     let category: Category
     let siteDomain: String?
+    let cursorBefore: String?
+    let cursorAfter: String?
 
     /// Display key for prompt lookup: "gmail.com" for browser sites, "Safari" for browsers without domain, "Slack" for native apps.
     var promptKey: String {
@@ -32,11 +34,14 @@ struct AppContext: Sendable {
               let appName = app.localizedName else { return nil }
         let category = classify(appName: appName, bundleID: app.bundleIdentifier)
         let domain = siteKey(pid: app.processIdentifier)
+        let cursor = cursorContext(pid: app.processIdentifier)
         return AppContext(
             appName: appName,
             bundleIdentifier: app.bundleIdentifier,
             category: category,
-            siteDomain: domain
+            siteDomain: domain,
+            cursorBefore: cursor.before,
+            cursorAfter: cursor.after
         )
     }
 
@@ -45,7 +50,66 @@ struct AppContext: Sendable {
             appName: appName,
             bundleIdentifier: bundleID,
             category: classify(appName: appName, bundleID: bundleID),
-            siteDomain: siteDomain
+            siteDomain: siteDomain,
+            cursorBefore: nil,
+            cursorAfter: nil
+        )
+    }
+
+    // MARK: - Cursor context via AXUIElement
+
+    private static let maxContextChars = 100
+
+    private static func cursorContext(pid: pid_t) -> (before: String?, after: String?) {
+        guard AXIsProcessTrusted() else { return (nil, nil) }
+        let sysWide = AXUIElementCreateSystemWide()
+        AXUIElementSetMessagingTimeout(sysWide, 0.15)
+        var focusedRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(sysWide, kAXFocusedUIElementAttribute as CFString, &focusedRef) == .success,
+              let focused = focusedRef, CFGetTypeID(focused) == AXUIElementGetTypeID() else {
+            return (nil, nil)
+        }
+        let element = focused as! AXUIElement
+
+        // Skip secure text fields (password inputs)
+        var roleRef: CFTypeRef?
+        AXUIElementCopyAttributeValue(element, kAXRoleAttribute as CFString, &roleRef)
+        if (roleRef as? String) == "AXSecureTextField" { return (nil, nil) }
+
+        // Get full text value
+        var valueRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, kAXValueAttribute as CFString, &valueRef) == .success,
+              let fullText = valueRef as? String, !fullText.isEmpty else {
+            return (nil, nil)
+        }
+
+        // Get selected text range to find cursor position
+        var rangeRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, kAXSelectedTextRangeAttribute as CFString, &rangeRef) == .success,
+              let rangeValue = rangeRef else {
+            return (nil, nil)
+        }
+        var cfRange = CFRange(location: 0, length: 0)
+        guard AXValueGetValue(rangeValue as! AXValue, .cfRange, &cfRange) else {
+            return (nil, nil)
+        }
+
+        let cursorPos = cfRange.location
+        guard cursorPos >= 0, cursorPos <= fullText.count else { return (nil, nil) }
+
+        let startIndex = fullText.startIndex
+        let cursorIndex = fullText.index(startIndex, offsetBy: min(cursorPos, fullText.count))
+
+        let beforeStart = fullText.index(cursorIndex, offsetBy: -min(maxContextChars, cursorPos), limitedBy: startIndex) ?? startIndex
+        let before = String(fullText[beforeStart..<cursorIndex])
+
+        let remaining = fullText.distance(from: cursorIndex, to: fullText.endIndex)
+        let afterEnd = fullText.index(cursorIndex, offsetBy: min(maxContextChars, remaining), limitedBy: fullText.endIndex) ?? fullText.endIndex
+        let after = String(fullText[cursorIndex..<afterEnd])
+
+        return (
+            before.isEmpty ? nil : before,
+            after.isEmpty ? nil : after
         )
     }
 
@@ -56,6 +120,7 @@ struct AppContext: Sendable {
     ]
 
     private static func siteKey(pid: pid_t) -> String? {
+        guard AXIsProcessTrusted() else { return nil }
         let appRef = AXUIElementCreateApplication(pid)
         AXUIElementSetMessagingTimeout(appRef, 0.5)
         var windowRef: CFTypeRef?

@@ -276,6 +276,12 @@ final class RecordingCoordinator {
             if let bundleID = appContext?.bundleIdentifier {
                 refinerContext[RefinerContextKey.bundleID] = bundleID
             }
+            if let before = appContext?.cursorBefore {
+                refinerContext[RefinerContextKey.beforeText] = before
+            }
+            if let after = appContext?.cursorAfter {
+                refinerContext[RefinerContextKey.afterText] = after
+            }
             #if PROFEATURES
             if let key = appContext?.promptKey,
                let customPrompt = prefs.appPrompts[key], !customPrompt.isEmpty {

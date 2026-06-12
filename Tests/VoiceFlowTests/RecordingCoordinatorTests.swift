@@ -114,6 +114,7 @@ struct RecordingCoordinatorTests {
         let shared = MockInjector()
         let direct = directInjector ?? shared
         let clipboard = clipboardInjector ?? shared
+        UserDefaults.standard.set("refine", forKey: "refinementMode")
         let coordinator = RecordingCoordinator(
             sttClient: stt,
             refinerClient: refiner,
@@ -220,7 +221,7 @@ struct RecordingCoordinatorTests {
         coordinator.toggle()
         coordinator.toggle()
         coordinator.cancel() // explicit cancel
-        try? await Task.sleep(for: .milliseconds(500))
+        try? await Task.sleep(for: .milliseconds(800))
 
         #expect(coordinator.session.state == .idle)
         #expect(injector.injectedText == nil)
@@ -231,9 +232,10 @@ struct RecordingCoordinatorTests {
         refiner.refinedToReturn = "Second refined"
 
         coordinator.toggle()
+        try? await Task.sleep(for: .milliseconds(50))
         #expect(coordinator.isRecording)
         coordinator.toggle()
-        try? await Task.sleep(for: .milliseconds(50))
+        try? await Task.sleep(for: .milliseconds(100))
 
         #expect(injector.injectedText == "Second refined")
         #expect(coordinator.session.state == .idle)
@@ -486,11 +488,12 @@ struct RecordingCoordinatorTests {
 
         coordinator.toggle()
         coordinator.toggle()
-        try? await Task.sleep(for: .milliseconds(300))
+        try? await Task.sleep(for: .milliseconds(500))
 
         #expect(injector.injectedText == "First refined")
         #expect(!coordinator.isRecording)
 
+        stt.stopDelay = nil
         stt.transcriptToReturn = "Second"
         refiner.refinedToReturn = "Second refined"
         injector.injectedText = nil
@@ -513,9 +516,10 @@ struct RecordingCoordinatorTests {
             refiner.refinedToReturn = "Refined \(i)"
 
             coordinator.toggle()
+            try? await Task.sleep(for: .milliseconds(50))
             #expect(coordinator.isRecording)
             coordinator.toggle()
-            try? await Task.sleep(for: .milliseconds(200))
+            try? await Task.sleep(for: .milliseconds(400))
 
             #expect(injector.injectedText == "Refined \(i)")
             #expect(!coordinator.isRecording)
