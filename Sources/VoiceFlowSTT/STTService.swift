@@ -35,6 +35,7 @@ final class STTService: NSObject, STTServiceProtocol {
 
     private weak var connection: NSXPCConnection?
     private var tapInstalled = false
+    private var pendingBuffers: [AVAudioPCMBuffer] = []
 
     init(connection: NSXPCConnection) {
         self.connection = connection
@@ -61,19 +62,43 @@ final class STTService: NSObject, STTServiceProtocol {
 
     private func startWithClassic(locale localeID: String) {
         client?.didChangeEngine?("classic")
-        let locale = Locale(identifier: localeID)
-        guard let recognizer = SFSpeechRecognizer(locale: locale),
-              recognizer.isAvailable else {
-            client?.didEncounterError("Speech recognizer is not available for \(localeID).")
-            return
-        }
-        self.recognizer = recognizer
 
         lock.lock()
         confirmedText = ""
         provisionalText = ""
         stopped = false
+        pendingBuffers.removeAll()
         lock.unlock()
+
+        // Start audio capture immediately — buffer while recognizer loads
+        installTapIfNeeded { [weak self] buffer in
+            guard let self else { return }
+            self.lock.lock()
+            if let request = self.recognitionRequest {
+                self.lock.unlock()
+                request.append(buffer)
+            } else {
+                self.pendingBuffers.append(buffer)
+                self.lock.unlock()
+            }
+        }
+        do {
+            audioEngine.prepare()
+            try audioEngine.start()
+        } catch {
+            cleanup()
+            client?.didEncounterError(error.localizedDescription)
+            return
+        }
+
+        let locale = Locale(identifier: localeID)
+        guard let recognizer = SFSpeechRecognizer(locale: locale),
+              recognizer.isAvailable else {
+            cleanup()
+            client?.didEncounterError("Speech recognizer is not available for \(localeID).")
+            return
+        }
+        self.recognizer = recognizer
 
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
@@ -83,11 +108,13 @@ final class STTService: NSObject, STTServiceProtocol {
         if #available(macOS 26, *) {
             request.addsPunctuation = true
         }
-        self.recognitionRequest = request
 
-        installTapIfNeeded { [weak self] buffer in
-            self?.recognitionRequest?.append(buffer)
-        }
+        // Flush buffered audio, then switch to direct append
+        lock.lock()
+        for buffer in pendingBuffers { request.append(buffer) }
+        pendingBuffers.removeAll()
+        self.recognitionRequest = request
+        lock.unlock()
 
         recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
             guard let self else { return }
@@ -132,14 +159,6 @@ final class STTService: NSObject, STTServiceProtocol {
                 }
             }
         }
-
-        do {
-            audioEngine.prepare()
-            try audioEngine.start()
-        } catch {
-            cleanup()
-            client?.didEncounterError(error.localizedDescription)
-        }
     }
 
     // MARK: - Enhanced (SpeechAnalyzer + SpeechTranscriber, macOS 26+)
@@ -149,8 +168,29 @@ final class STTService: NSObject, STTServiceProtocol {
         let locale = Locale(identifier: localeID)
         let transcriber = SpeechTranscriber(locale: locale, preset: .progressiveTranscription)
 
-        // SAFETY: STTService lives in an XPC service; startRecording/stopRecording are serialized by XPC.
-        // Mutable state (confirmedText, provisionalText, stopped) is protected by `lock`.
+        lock.lock()
+        confirmedText = ""
+        provisionalText = ""
+        stopped = false
+        pendingBuffers.removeAll()
+        lock.unlock()
+
+        // Start audio capture immediately — buffer while checking model availability
+        installTapIfNeeded { [weak self] buffer in
+            guard let self else { return }
+            self.lock.lock()
+            self.pendingBuffers.append(buffer)
+            self.lock.unlock()
+        }
+        do {
+            audioEngine.prepare()
+            try audioEngine.start()
+        } catch {
+            cleanup()
+            client?.didEncounterError(error.localizedDescription)
+            return
+        }
+
         nonisolated(unsafe) let unsafeSelf = self
         Task {
             let bcp47 = locale.identifier(.bcp47)
@@ -175,11 +215,6 @@ final class STTService: NSObject, STTServiceProtocol {
     @available(macOS 26, *)
     private func launchAnalyzer(transcriber: SpeechTranscriber, locale localeID: String) {
         client?.didChangeEngine?("enhanced")
-        lock.lock()
-        confirmedText = ""
-        provisionalText = ""
-        stopped = false
-        lock.unlock()
 
         let sa = SpeechAnalyzer(modules: [transcriber])
         self.analyzer = sa
@@ -213,7 +248,8 @@ final class STTService: NSObject, STTServiceProtocol {
                 let (inputStream, continuation) = AsyncStream<AnalyzerInput>.makeStream()
                 unsafeSelf.analyzerContinuation = continuation
 
-                unsafeSelf.installTapIfNeeded { buffer in
+                // Flush buffered audio, then switch tap to analyzer feed
+                let convertAndYield: (AVAudioPCMBuffer) -> Void = { buffer in
                     if let converter {
                         let ratio = analyzerFormat.sampleRate / micFormat.sampleRate
                         let capacity = AVAudioFrameCount((Double(buffer.frameLength) * ratio).rounded(.up))
@@ -231,9 +267,15 @@ final class STTService: NSObject, STTServiceProtocol {
                     }
                 }
 
-                unsafeSelf.audioEngine.prepare()
-                try unsafeSelf.audioEngine.start()
-                sttLogger.notice("[STTService] enhanced engine started")
+                let buffered = unsafeSelf.lock.withLock {
+                    let b = unsafeSelf.pendingBuffers
+                    unsafeSelf.pendingBuffers.removeAll()
+                    return b
+                }
+                for buffer in buffered { convertAndYield(buffer) }
+
+                unsafeSelf.installTapIfNeeded { buffer in convertAndYield(buffer) }
+                sttLogger.notice("[STTService] enhanced engine started, flushed buffered audio")
 
                 resultsTask = Task {
                     for try await result in transcriber.results {
@@ -329,6 +371,7 @@ final class STTService: NSObject, STTServiceProtocol {
         lock.lock()
         let shouldRemoveTap = tapInstalled
         tapInstalled = false
+        pendingBuffers.removeAll()
         lock.unlock()
 
         if shouldRemoveTap {
