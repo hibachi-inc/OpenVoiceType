@@ -372,6 +372,7 @@ final class STTService: NSObject, STTServiceProtocol {
         let shouldRemoveTap = tapInstalled
         tapInstalled = false
         pendingBuffers.removeAll()
+        recognitionRequest = nil
         lock.unlock()
 
         if shouldRemoveTap {
@@ -379,7 +380,6 @@ final class STTService: NSObject, STTServiceProtocol {
         }
         audioTapHandler = nil
         audioEngine.stop()
-        recognitionRequest = nil
         recognitionTask = nil
         recognizer = nil
     }

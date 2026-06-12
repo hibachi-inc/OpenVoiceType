@@ -86,7 +86,8 @@ struct AppContext: Sendable {
         // Get selected text range to find cursor position
         var rangeRef: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, kAXSelectedTextRangeAttribute as CFString, &rangeRef) == .success,
-              let rangeValue = rangeRef else {
+              let rangeValue = rangeRef,
+              CFGetTypeID(rangeValue) == AXValueGetTypeID() else {
             return (nil, nil)
         }
         var cfRange = CFRange(location: 0, length: 0)
@@ -94,17 +95,17 @@ struct AppContext: Sendable {
             return (nil, nil)
         }
 
-        let cursorPos = cfRange.location
-        guard cursorPos >= 0, cursorPos <= fullText.count else { return (nil, nil) }
+        // cfRange.location is a UTF-16 offset; convert to String.Index via UTF-16 view
+        let utf16 = fullText.utf16
+        let cursorUTF16 = cfRange.location
+        guard cursorUTF16 >= 0, cursorUTF16 <= utf16.count else { return (nil, nil) }
 
-        let startIndex = fullText.startIndex
-        let cursorIndex = fullText.index(startIndex, offsetBy: min(cursorPos, fullText.count))
+        let cursorIndex = String.Index(utf16Offset: cursorUTF16, in: fullText)
 
-        let beforeStart = fullText.index(cursorIndex, offsetBy: -min(maxContextChars, cursorPos), limitedBy: startIndex) ?? startIndex
+        let beforeStart = fullText.index(cursorIndex, offsetBy: -maxContextChars, limitedBy: fullText.startIndex) ?? fullText.startIndex
         let before = String(fullText[beforeStart..<cursorIndex])
 
-        let remaining = fullText.distance(from: cursorIndex, to: fullText.endIndex)
-        let afterEnd = fullText.index(cursorIndex, offsetBy: min(maxContextChars, remaining), limitedBy: fullText.endIndex) ?? fullText.endIndex
+        let afterEnd = fullText.index(cursorIndex, offsetBy: maxContextChars, limitedBy: fullText.endIndex) ?? fullText.endIndex
         let after = String(fullText[cursorIndex..<afterEnd])
 
         return (
