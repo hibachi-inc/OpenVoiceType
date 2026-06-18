@@ -52,8 +52,9 @@ enum FoundationModelsRefiner {
         do {
             let response = try await session.respond(to: taskPrompt)
             let refined = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
+            let sanitized = sanitizeOutput(refined, original: text)
             logger.info("Refined: \(refined.prefix(50))...")
-            return refined.isEmpty ? text : refined
+            return sanitized.isEmpty ? text : sanitized
         } catch {
             logger.error("Refine error: \(error.localizedDescription)")
             return SimpleRefiner.clean(text)
@@ -66,44 +67,63 @@ enum FoundationModelsRefiner {
         if let customPrompt, !customPrompt.isEmpty {
             prompt += "\n[USER INSTRUCTION] \(customPrompt)"
         }
-        let escaped = text.replacingOccurrences(of: "\"", with: "'")
-        return "\(prompt)\n\n[INPUT] \"\(escaped)\""
+        return """
+        \(prompt)
+
+        "\(text)"
+        """
     }
 
     private static func jaRules(for category: String) -> String {
         let hint: String
         switch category {
-        case "chat": hint = "チャット向け: 簡潔で会話的な文体。"
-        case "email": hint = "メール向け: 丁寧で完全な文章。"
+        case "chat", "email", "browser", "notes": hint = ""
         case "code": hint = "コードエディタ向け: 技術用語・識別子をそのまま保持。"
         case "terminal": hint = "ターミナル向け: コマンド・フラグ・パスをそのまま保持。"
-        case "notes": hint = "ノート向け: 箇条書きで構造化。"
-        case "browser": hint = "ブラウザ向け: 簡潔な文体。"
-        default: hint = "自然な日本語に整形。"
+        default: hint = ""
         }
         return """
-        [TASK] 以下の音声入力テキストを整形してください。\(hint)
-        フィラー（えーと、あの、まあ）を削除し、句読点を追加し、誤認識を文脈から修正してください。
-        意味を変えないでください。整形後のテキストのみを返してください。説明や挨拶や前置きは絶対に不要です。
+        以下の音声文字起こしを整形して。言い換え、要約、補足、文体変更、語順変更、推測による修正はしないで。フィラーを削除し、句読点を補い、数字・金額・日付・単位を文脈に合う表記へ整えるだけにして。\(hint)
+        整形後の本文だけを返して。
         """
     }
 
     private static func enRules(for category: String) -> String {
         let hint: String
         switch category {
-        case "chat": hint = "For a chat app. Keep concise and conversational."
-        case "email": hint = "For email. Use polished, complete sentences."
+        case "chat", "email", "browser", "notes": hint = ""
         case "code": hint = "For a code editor. Preserve identifiers and symbols exactly."
         case "terminal": hint = "For terminal. Preserve commands and flags exactly."
-        case "notes": hint = "For notes. Structure with bullet points."
-        case "browser": hint = "For browser. Concise for forms and comments."
-        default: hint = "Produce natural, well-formatted text."
+        default: hint = ""
         }
         return """
-        [TASK] Refine the following voice-input text. \(hint)
-        Remove filler words, add punctuation, fix misrecognitions from context.
-        Do NOT change the meaning. Return ONLY the refined text. No explanations, no greetings, no preamble.
+        Format the following voice transcript only. Do not paraphrase, summarize, add details, change tone, reorder wording, or make inferred corrections. Only remove filler words, add punctuation, and format numbers, money, dates, and units appropriately for the context. \(hint)
+        Return only the refined text.
         """
+    }
+
+    private static func sanitizeOutput(_ output: String, original: String) -> String {
+        let trimmed = output.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return trimmed }
+
+        let lower = trimmed.lowercased()
+        let originalLower = original.lowercased()
+        let leakedInputTag = lower.contains("<input>") && !originalLower.contains("<input>")
+        let looksLikeExplanation = [
+            "テキストは以下の通り",
+            "以下の通りです",
+            "機能です",
+            "デフォルト指示",
+            "the text is as follows",
+            "the transcript is as follows",
+        ].contains { lower.contains($0) }
+
+        if leakedInputTag || looksLikeExplanation {
+            logger.warning("Model returned prompt/meta text; falling back to simple cleanup")
+            return SimpleRefiner.clean(original)
+        }
+
+        return trimmed
     }
 }
 #endif

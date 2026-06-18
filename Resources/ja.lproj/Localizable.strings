@@ -63,6 +63,7 @@
 "general.permission.accessibility_desc" = "カーソル位置への自動ペーストに必要です。";
 "general.permission.granted" = "許可済み";
 "general.permission.not_granted" = "未許可";
+"general.permission.request_access" = "アクセスを許可";
 "general.permission.open_settings" = "設定を開く";
 
 /* Output Method */
@@ -84,20 +85,26 @@
 "refinement.default_prompt" = "デフォルト指示";
 "refinement.default_prompt_desc" = "AI 整形時にこの指示が適用されます。";
 "refinement.default_prompt_desc_pro" = "アプリ別の指示がない場合に適用されます。";
-"refinement.default_prompt.placeholder" = "例: 常に丁寧語を使う";
-"refinement.default_prompt.initial" = "音声入力のため、誤認識と思われる箇所は意味を汲み取って正しい言葉に修正してください。修正不要な場合はそのまま出力してください。";
-"refinement.suggestion.correct" = "補正";
-"refinement.suggestion.correct_prompt" = "音声入力のため意味を汲み取って正しい言葉に修正して";
-"refinement.suggestion.polite" = "丁寧";
-"refinement.suggestion.polite_prompt" = "丁寧語で整えて。ですます調に統一";
-"refinement.suggestion.concise" = "簡潔";
-"refinement.suggestion.concise_prompt" = "要点だけ残して簡潔にまとめて";
-"refinement.suggestion.translate" = "翻訳";
-"refinement.suggestion.translate_prompt" = "英語に翻訳して";
+"refinement.default_prompt.placeholder" = "例: フィラー削除と句読点だけ整える";
+"refinement.default_prompt.initial" = "以下の音声文字起こしを整形して。言い換え、要約、補足、文体変更、語順変更、推測による修正はしないで。フィラーを削除し、句読点を補い、数字・金額・日付・単位を文脈に合う表記へ整えるだけにして。";
+"refinement.default_prompt.reset" = "元に戻す";
 
 "refinement.app_prompts" = "アプリ別の整形";
-"refinement.app_prompts_desc" = "アプリごとにテキスト整形の指示をカスタマイズできます。上のデフォルト指示より優先されます。";
+"refinement.app_prompts_desc" = "アプリごとに整形指示をカスタマイズできます。タイプ別の指示より優先されます。";
 "refinement.app_prompt.select_app" = "アプリを選択";
+"refinement.app_prompt.select_target" = "アプリまたはタイプを選択";
+"refinement.app_prompt.app_prefix" = "アプリ:";
+"refinement.app_prompt.type_prefix" = "タイプ:";
+"refinement.app_prompt.category.chat" = "チャット";
+"refinement.app_prompt.category.email" = "メール";
+"refinement.app_prompt.category.code" = "コード";
+"refinement.app_prompt.category.terminal" = "ターミナル";
+"refinement.app_prompt.category.notes" = "ノート";
+"refinement.app_prompt.category.browser" = "ブラウザ";
+"refinement.app_prompt.category.generic" = "汎用";
+"refinement.type_prompts" = "タイプ別の整形";
+"refinement.type_prompts_desc" = "コード、チャット、汎用などのアプリタイプごとに整形指示を設定できます。";
+"refinement.type_prompt.select_type" = "タイプを選択";
 "refinement.app_prompt.placeholder" = "例: カジュアルな口調で、技術用語はそのまま残す";
 "refinement.app_prompt.delete" = "削除";
 "refinement.app_prompt.no_history" = "まずいくつかのアプリで音声入力を使ってください。使用したアプリがここに表示されます。";
@@ -165,6 +172,8 @@
 "pro.feature_translation" = "クイック多言語翻訳";
 "pro.feature_lang_shortcuts" = "言語ごとのショートカットキー";
 "pro.feature_custom_refine" = "アプリ別カスタム整形プロンプト";
+"pro.open_upgrade" = "アップグレード画面を開く";
+"pro.iap_available_here" = "購入と復元は Pro 画面から行えます。";
 
 /* Translation Settings */
 "translation.enabled" = "有効な言語";
@@ -197,7 +206,7 @@
 "error.refinement_timeout" = "整形をスキップしました (タイムアウト)";
 "general.output_method.clipboard_auto_desc" = "アクセシビリティ権限が未設定です。テキストはクリップボードにコピーされます（⌘Vでペースト）。権限を付与するとカーソル位置に自動挿入されます。";
 "hotkey.push_to_talk" = "長押し入力";
-"hotkey.push_to_talk_toggle" = "長押しで音声入力";
+"hotkey.push_to_talk_toggle" = "Control を長押しで音声入力";
 "hotkey.push_to_talk_desc %@" = "%@ キーを押している間だけ音声入力します。離すと入力完了します。通常のショートカットも併用できます。";
 "hotkey.reset" = "デフォルトに戻す（⌃V）";
 "sidebar.custom_refine" = "カスタム整形";

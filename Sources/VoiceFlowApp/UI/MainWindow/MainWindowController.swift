@@ -4,6 +4,8 @@ import SwiftUI
 @MainActor
 final class MainWindowController {
     private var window: NSWindow?
+    private let appName: String = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
+        ?? Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "VoiceLatte"
 
     func show() {
         if let window, window.isVisible {
@@ -21,11 +23,11 @@ final class MainWindowController {
             backing: .buffered,
             defer: false
         )
-        window.title = "OpenVoiceText"
+        window.title = appName
         window.titlebarAppearsTransparent = true
         window.toolbarStyle = .unified
         window.appearance = NSAppearance(named: .aqua)
-        window.backgroundColor = NSColor(srgbRed: 0.992, green: 0.949, blue: 0.824, alpha: 1)
+        window.backgroundColor = NSColor(srgbRed: 0.953, green: 0.937, blue: 0.910, alpha: 1)
         window.contentView = hosting
         window.center()
         window.isReleasedWhenClosed = false

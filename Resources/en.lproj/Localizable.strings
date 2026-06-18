@@ -63,6 +63,7 @@
 "general.permission.accessibility_desc" = "Required for auto-paste at cursor position.";
 "general.permission.granted" = "Granted";
 "general.permission.not_granted" = "Not Granted";
+"general.permission.request_access" = "Allow Access";
 "general.permission.open_settings" = "Open Settings";
 
 /* Output Method */
@@ -84,20 +85,26 @@
 "refinement.default_prompt" = "Default Instruction";
 "refinement.default_prompt_desc" = "This instruction is applied when AI refinement is enabled.";
 "refinement.default_prompt_desc_pro" = "Applied to all apps unless overridden by a per-app instruction below.";
-"refinement.default_prompt.placeholder" = "e.g. Always use polite language";
-"refinement.default_prompt.initial" = "This is voice input. If there seem to be transcription errors, please understand the meaning and correct them. If no corrections are needed, please output it as is.";
-"refinement.suggestion.correct" = "Correct";
-"refinement.suggestion.correct_prompt" = "Fix transcription errors by understanding the intended meaning";
-"refinement.suggestion.polite" = "Polite";
-"refinement.suggestion.polite_prompt" = "Use polite, professional language";
-"refinement.suggestion.concise" = "Concise";
-"refinement.suggestion.concise_prompt" = "Keep it concise. Remove filler and redundancy";
-"refinement.suggestion.translate" = "Translate";
-"refinement.suggestion.translate_prompt" = "Translate to Japanese";
+"refinement.default_prompt.placeholder" = "e.g. Only remove fillers and add punctuation";
+"refinement.default_prompt.initial" = "Format the following voice transcript only. Do not paraphrase, summarize, add details, change tone, reorder wording, or make inferred corrections. Only remove filler words, add punctuation, and format numbers, money, dates, and units appropriately for the context.";
+"refinement.default_prompt.reset" = "Reset";
 
 "refinement.app_prompts" = "Per-App Refinement";
-"refinement.app_prompts_desc" = "Customize how text is refined for each app. Overrides the default instruction above.";
+"refinement.app_prompts_desc" = "Customize refinement instructions by app. Overrides per-type instructions.";
 "refinement.app_prompt.select_app" = "Select app";
+"refinement.app_prompt.select_target" = "Select app or type";
+"refinement.app_prompt.app_prefix" = "App:";
+"refinement.app_prompt.type_prefix" = "Type:";
+"refinement.app_prompt.category.chat" = "Chat";
+"refinement.app_prompt.category.email" = "Email";
+"refinement.app_prompt.category.code" = "Code";
+"refinement.app_prompt.category.terminal" = "Terminal";
+"refinement.app_prompt.category.notes" = "Notes";
+"refinement.app_prompt.category.browser" = "Browser";
+"refinement.app_prompt.category.generic" = "Generic";
+"refinement.type_prompts" = "Per-Type Refinement";
+"refinement.type_prompts_desc" = "Set refinement instructions for app types such as code, chat, and generic.";
+"refinement.type_prompt.select_type" = "Select type";
 "refinement.app_prompt.placeholder" = "e.g. Use casual tone, keep technical terms as-is";
 "refinement.app_prompt.delete" = "Delete";
 "refinement.app_prompt.no_history" = "Use voice input in some apps first — they'll appear here.";
@@ -149,6 +156,8 @@
 "pro.feature_translation" = "Quick multi-language translation";
 "pro.feature_lang_shortcuts" = "Per-language shortcut keys";
 "pro.feature_custom_refine" = "Per-app custom refinement prompts";
+"pro.open_upgrade" = "Open Upgrade";
+"pro.iap_available_here" = "Purchase and restore are available from the Pro screen.";
 "pro.upgrade %@" = "Upgrade for %@";
 "pro.loading" = "Loading...";
 "pro.restore" = "Restore Purchases";
@@ -197,7 +206,7 @@
 "error.refinement_timeout" = "Refinement skipped (timeout)";
 "general.output_method.clipboard_auto_desc" = "Accessibility not enabled. Text is copied to clipboard — press ⌘V to paste. Grant accessibility permission to enable auto-insert at cursor.";
 "hotkey.push_to_talk" = "Push to Talk";
-"hotkey.push_to_talk_toggle" = "Hold to record";
+"hotkey.push_to_talk_toggle" = "Hold Control to record";
 "hotkey.push_to_talk_desc %@" = "Hold %@ to record. Release to finish and insert text. Works alongside the toggle shortcut.";
 "hotkey.reset" = "Reset to Default (⌃V)";
 "sidebar.custom_refine" = "Custom Refine";

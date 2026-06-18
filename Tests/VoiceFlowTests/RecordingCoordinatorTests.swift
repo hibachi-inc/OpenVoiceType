@@ -114,6 +114,7 @@ struct RecordingCoordinatorTests {
         let shared = MockInjector()
         let direct = directInjector ?? shared
         let clipboard = clipboardInjector ?? shared
+        let history = HistoryStore(inMemoryOnly: true)
         UserDefaults.standard.set("refine", forKey: "refinementMode")
         let coordinator = RecordingCoordinator(
             sttClient: stt,
@@ -121,6 +122,7 @@ struct RecordingCoordinatorTests {
             hud: hud,
             directInjector: direct,
             clipboardInjector: clipboard,
+            history: history,
             skipPermissionCheck: true
         )
         coordinator.setup()
@@ -157,6 +159,30 @@ struct RecordingCoordinatorTests {
         #expect(hud.states.contains("listening"))
         #expect(hud.states.contains { $0.starts(with: "processing:") })
         #expect(!coordinator.isRecording)
+    }
+
+    @Test func wrappedInputTagFromRefinerIsStrippedBeforeInjection() async {
+        let (coordinator, stt, refiner, _, injector, _) = makeCoordinator()
+        stt.transcriptToReturn = "うんかなりいい感じ"
+        refiner.refinedToReturn = "<input>うん、かなりいい感じです。</input>"
+
+        coordinator.toggle()
+        coordinator.toggle()
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #expect(injector.injectedText == "うん、かなりいい感じです。")
+    }
+
+    @Test func orphanOpeningInputTagFromRefinerIsStrippedBeforeInjection() async {
+        let (coordinator, stt, refiner, _, injector, _) = makeCoordinator()
+        stt.transcriptToReturn = "文字起こしの履歴"
+        refiner.refinedToReturn = "<input>文字起こしの履歴です。"
+
+        coordinator.toggle()
+        coordinator.toggle()
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #expect(injector.injectedText == "文字起こしの履歴です。")
     }
 
     @Test func emptyTranscriptSkipsRefinerAndHides() async {

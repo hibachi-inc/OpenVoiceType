@@ -38,26 +38,26 @@ enum DS {
 
     enum Colors {
         // Coffee palette — base colors
-        static let espresso = Color(red: 0.361, green: 0.224, blue: 0.157)      // #5c3928
-        static let darkCoffee = Color(red: 0.435, green: 0.298, blue: 0.243)    // #6f4c3e
-        static let latte = Color(red: 0.757, green: 0.627, blue: 0.482)         // #c1a07b
-        static let cream = Color(red: 0.910, green: 0.835, blue: 0.632)         // #e8d5a1
-        static let milk = Color(red: 0.949, green: 0.878, blue: 0.753)          // #f2e0c0
+        static let espresso = Color(red: 0.169, green: 0.129, blue: 0.114)      // #2b211d
+        static let darkCoffee = Color(red: 0.420, green: 0.290, blue: 0.243)    // #6b4a3e
+        static let latte = Color(red: 0.541, green: 0.353, blue: 0.267)         // #8a5a44
+        static let cream = Color(red: 0.882, green: 0.843, blue: 0.800)         // #e1d7cc
+        static let milk = Color(red: 0.965, green: 0.945, blue: 0.918)          // #f6f1ea
 
         // Semantic colors — mapped to coffee palette
         static let primary = espresso                                            // テキスト主色
         static let secondary = darkCoffee.opacity(0.6)                           // テキスト副色
-        static let accent = darkCoffee                                           // ボタン・リンク
+        static let accent = latte                                                // ボタン・リンク
         static let recording = darkCoffee                                        // コーヒーブラウン
-        static let processing = Color(red: 0.75, green: 0.5, blue: 0.2)         // アンバー
+        static let processing = Color(red: 0.612, green: 0.420, blue: 0.247)    // ローストアンバー
         static let success = Color(red: 0.35, green: 0.6, blue: 0.3)            // 落ち着いた緑
         static let error = Color(red: 0.8, green: 0.25, blue: 0.2)              // recording同色
 
         // Surface colors
-        static let fieldBg = Color(red: 0.984, green: 0.980, blue: 0.973)       // #FBFAF8
-        static let windowBg = Color(red: 0.992, green: 0.949, blue: 0.824)      // #FDF2D2
-        static let cardBg = Color.white.opacity(0.5)                             // 半透明白
-        static let sidebarBg = darkCoffee                                        // #6f4c3e
+        static let fieldBg = Color(red: 1.000, green: 0.992, blue: 0.973)       // #fffdf8
+        static let windowBg = Color(red: 0.953, green: 0.937, blue: 0.910)      // #f3efe8
+        static let cardBg = Color(red: 1.000, green: 0.992, blue: 0.973).opacity(0.72)
+        static let sidebarBg = darkCoffee                                        // #6b4a3e
     }
 
     // MARK: - Animation

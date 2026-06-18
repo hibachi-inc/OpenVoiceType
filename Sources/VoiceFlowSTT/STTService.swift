@@ -31,6 +31,9 @@ final class STTService: NSObject, STTServiceProtocol {
     private var confirmedText = ""
     private var provisionalText = ""
     private var stopped = false
+    private var stopRequested = false
+    private var stopReply: ((String?) -> Void)?
+    private var stopFinalizationTask: Task<Void, Never>?
     private let lock = NSLock()
 
     private weak var connection: NSXPCConnection?
@@ -60,14 +63,18 @@ final class STTService: NSObject, STTServiceProtocol {
 
     // MARK: - Classic (SFSpeechRecognizer)
 
-    private func startWithClassic(locale localeID: String) {
+    private func startWithClassic(locale localeID: String, initialBuffers: [AVAudioPCMBuffer] = []) {
         client?.didChangeEngine?("classic")
 
         lock.lock()
         confirmedText = ""
         provisionalText = ""
         stopped = false
-        pendingBuffers.removeAll()
+        stopRequested = false
+        stopReply = nil
+        stopFinalizationTask?.cancel()
+        stopFinalizationTask = nil
+        pendingBuffers = initialBuffers
         lock.unlock()
 
         // Start audio capture immediately — buffer while recognizer loads
@@ -78,7 +85,9 @@ final class STTService: NSObject, STTServiceProtocol {
                 self.lock.unlock()
                 request.append(buffer)
             } else {
-                self.pendingBuffers.append(buffer)
+                if let copied = self.copyAudioBuffer(buffer) {
+                    self.pendingBuffers.append(copied)
+                }
                 self.lock.unlock()
             }
         }
@@ -139,7 +148,11 @@ final class STTService: NSObject, STTServiceProtocol {
                     self.lock.lock()
                     self.confirmedText = self.lockedFullTranscript
                     self.provisionalText = ""
+                    let shouldCompleteStop = self.stopRequested
                     self.lock.unlock()
+                    if shouldCompleteStop {
+                        self.completeStop()
+                    }
                 }
                 return
             }
@@ -153,9 +166,16 @@ final class STTService: NSObject, STTServiceProtocol {
                         self.confirmedText = self.lockedFullTranscript
                         self.provisionalText = ""
                     }
+                    let shouldCompleteStop = self.stopRequested
                     self.lock.unlock()
+                    if shouldCompleteStop {
+                        self.completeStop()
+                    }
                 } else {
                     self.client?.didEncounterError(error.localizedDescription)
+                    if self.lock.withLock({ self.stopRequested }) {
+                        self.completeStop()
+                    }
                 }
             }
         }
@@ -172,6 +192,10 @@ final class STTService: NSObject, STTServiceProtocol {
         confirmedText = ""
         provisionalText = ""
         stopped = false
+        stopRequested = false
+        stopReply = nil
+        stopFinalizationTask?.cancel()
+        stopFinalizationTask = nil
         pendingBuffers.removeAll()
         lock.unlock()
 
@@ -179,7 +203,9 @@ final class STTService: NSObject, STTServiceProtocol {
         installTapIfNeeded { [weak self] buffer in
             guard let self else { return }
             self.lock.lock()
-            self.pendingBuffers.append(buffer)
+            if let copied = self.copyAudioBuffer(buffer) {
+                self.pendingBuffers.append(copied)
+            }
             self.lock.unlock()
         }
         do {
@@ -197,7 +223,7 @@ final class STTService: NSObject, STTServiceProtocol {
             let supported = await SpeechTranscriber.supportedLocales
             guard supported.contains(where: { $0.identifier(.bcp47) == bcp47 }) else {
                 sttLogger.notice("[STTService] locale=\(bcp47, privacy: .public) not supported, falling back to classic")
-                unsafeSelf.startWithClassic(locale: localeID)
+                unsafeSelf.fallbackToClassicPreservingBufferedAudio(locale: localeID)
                 return
             }
             let installed = await SpeechTranscriber.installedLocales
@@ -208,7 +234,7 @@ final class STTService: NSObject, STTServiceProtocol {
                 return
             }
             sttLogger.notice("[STTService] Model not installed, falling back to classic")
-            unsafeSelf.startWithClassic(locale: localeID)
+            unsafeSelf.fallbackToClassicPreservingBufferedAudio(locale: localeID)
         }
     }
 
@@ -228,7 +254,7 @@ final class STTService: NSObject, STTServiceProtocol {
             do {
                 guard let analyzerFormat = await SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith: [transcriber]) else {
                     sttLogger.notice("[STTService] No compatible audio format, falling back to classic")
-                    unsafeSelf.startWithClassic(locale: localeID)
+                    unsafeSelf.fallbackToClassicPreservingBufferedAudio(locale: localeID)
                     return
                 }
                 sttLogger.notice("[STTService] format: mic=\(micFormat, privacy: .public) analyzer=\(analyzerFormat, privacy: .public)")
@@ -236,7 +262,7 @@ final class STTService: NSObject, STTServiceProtocol {
                 if micFormat != analyzerFormat {
                     guard let c = AVAudioConverter(from: micFormat, to: analyzerFormat) else {
                         sttLogger.notice("[STTService] Cannot create converter, falling back to classic")
-                        unsafeSelf.startWithClassic(locale: localeID)
+                        unsafeSelf.fallbackToClassicPreservingBufferedAudio(locale: localeID)
                         return
                     }
                     c.primeMethod = .none
@@ -294,16 +320,25 @@ final class STTService: NSObject, STTServiceProtocol {
                             } else {
                                 unsafeSelf.provisionalText = text
                             }
+                            if isFinal && unsafeSelf.stopRequested {
+                                return true
+                            }
                             return false
                         }
-                        if shouldBreak { break }
                         let display = unsafeSelf.lock.withLock { unsafeSelf.lockedFullTranscript }
                         unsafeSelf.client?.didUpdateTranscript(display)
+                        if shouldBreak {
+                            unsafeSelf.completeStop()
+                            break
+                        }
                     }
                 }
 
                 try await sa.start(inputSequence: inputStream)
                 try await resultsTask?.value
+                if unsafeSelf.lock.withLock({ unsafeSelf.stopRequested }) {
+                    unsafeSelf.completeStop()
+                }
             } catch {
                 resultsTask?.cancel()
                 sttLogger.notice("[STTService] SpeechAnalyzer error: \(error), falling back to classic")
@@ -325,29 +360,48 @@ final class STTService: NSObject, STTServiceProtocol {
     // MARK: - Stop
 
     func stopRecording(reply: @escaping (String?) -> Void) {
-        lock.lock()
-        stopped = true
-        let result = lockedFullTranscript
-        confirmedText = ""
-        provisionalText = ""
-        lock.unlock()
+        var duplicateStopResult: String?
+        let didRequestStop = lock.withLock {
+            guard stopReply == nil else {
+                duplicateStopResult = lockedFullTranscript
+                return false
+            }
+            stopRequested = true
+            stopReply = reply
+            return true
+        }
+
+        guard didRequestStop else {
+            let result = duplicateStopResult ?? ""
+            reply(result.isEmpty ? nil : result)
+            return
+        }
+
+        let shouldReplyImmediately = recognitionTask == nil && _analyzer == nil
+        if shouldReplyImmediately {
+            completeStop()
+            return
+        }
+
+        stopAudioCapture()
 
         if #available(macOS 26, *), let sa = analyzer {
             analyzerContinuation?.finish()
             analyzerContinuation = nil
-            analyzerTask?.cancel()
-            analyzerTask = nil
             Task {
                 try? await sa.finish(after: .zero)
             }
-            self.analyzer = nil
         }
 
         recognitionRequest?.endAudio()
         recognitionTask?.finish()
-        cleanup()
 
-        reply(result.isEmpty ? nil : result)
+        stopFinalizationTask?.cancel()
+        nonisolated(unsafe) let unsafeSelf = self
+        stopFinalizationTask = Task {
+            try? await Task.sleep(for: .milliseconds(900))
+            unsafeSelf.completeStop()
+        }
     }
 
     // MARK: - Private
@@ -368,6 +422,15 @@ final class STTService: NSObject, STTServiceProtocol {
     }
 
     private func cleanup() {
+        stopFinalizationTask?.cancel()
+        stopFinalizationTask = nil
+        if #available(macOS 26, *) {
+            analyzerContinuation?.finish()
+            analyzerContinuation = nil
+            analyzerTask?.cancel()
+            analyzerTask = nil
+            analyzer = nil
+        }
         lock.lock()
         let shouldRemoveTap = tapInstalled
         tapInstalled = false
@@ -384,6 +447,38 @@ final class STTService: NSObject, STTServiceProtocol {
         recognizer = nil
     }
 
+    private func stopAudioCapture() {
+        let shouldRemoveTap = lock.withLock {
+            let installed = tapInstalled
+            tapInstalled = false
+            pendingBuffers.removeAll()
+            return installed
+        }
+        if shouldRemoveTap {
+            audioEngine.inputNode.removeTap(onBus: 0)
+        }
+        audioTapHandler = nil
+        audioEngine.stop()
+    }
+
+    private func completeStop() {
+        let completion = lock.withLock { () -> (((String?) -> Void), String)? in
+            guard let reply = stopReply else { return nil }
+            let result = lockedFullTranscript
+            stopped = true
+            stopRequested = false
+            stopReply = nil
+            confirmedText = ""
+            provisionalText = ""
+            return (reply, result)
+        }
+
+        cleanup()
+
+        guard let (reply, result) = completion else { return }
+        reply(result.isEmpty ? nil : result)
+    }
+
     /// Must be called while lock is held.
     private var lockedFullTranscript: String {
         if confirmedText.isEmpty { return provisionalText }
@@ -398,5 +493,39 @@ final class STTService: NSObject, STTServiceProtocol {
         vDSP_rmsqv(channelData, 1, &rms, frameLength)
         let level = max(0, min(1, rms * 10))
         client?.didUpdateAudioLevel(level)
+    }
+
+    private func fallbackToClassicPreservingBufferedAudio(locale localeID: String) {
+        let buffered = lock.withLock {
+            let buffers = pendingBuffers
+            pendingBuffers.removeAll()
+            return buffers
+        }
+        cleanup()
+        startWithClassic(locale: localeID, initialBuffers: buffered)
+    }
+
+    private func copyAudioBuffer(_ buffer: AVAudioPCMBuffer) -> AVAudioPCMBuffer? {
+        guard let copied = AVAudioPCMBuffer(
+            pcmFormat: buffer.format,
+            frameCapacity: buffer.frameLength
+        ) else {
+            return nil
+        }
+        copied.frameLength = buffer.frameLength
+
+        let sourceBuffers = UnsafeMutableAudioBufferListPointer(buffer.mutableAudioBufferList)
+        let copiedBuffers = UnsafeMutableAudioBufferListPointer(copied.mutableAudioBufferList)
+        for index in 0..<min(sourceBuffers.count, copiedBuffers.count) {
+            guard let source = sourceBuffers[index].mData,
+                  let destination = copiedBuffers[index].mData else {
+                continue
+            }
+            let byteCount = Int(sourceBuffers[index].mDataByteSize)
+            memcpy(destination, source, byteCount)
+            copiedBuffers[index].mDataByteSize = sourceBuffers[index].mDataByteSize
+        }
+
+        return copied
     }
 }

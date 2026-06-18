@@ -1,5 +1,9 @@
 import SwiftUI
 
+extension Notification.Name {
+    static let openProSettings = Notification.Name("openProSettings")
+}
+
 enum SidebarSection: String, Identifiable {
     case history = "history"
     case general = "general"
@@ -43,7 +47,13 @@ enum SidebarSection: String, Identifiable {
 
     static let freeItems: [SidebarSection] = [.history, .general, .hotkey]
     #if PROFEATURES
-    static let proItems: [SidebarSection] = [.pro, .translation, .customRefine]
+    static var proItems: [SidebarSection] {
+        var items: [SidebarSection] = [.translation, .customRefine]
+        if ProUpgradeManager.monetizationEnabled {
+            items.insert(.pro, at: 0)
+        }
+        return items
+    }
     #endif
     static let otherItems: [SidebarSection] = [.about]
 }
@@ -95,6 +105,13 @@ struct MainWindowView: View {
             .foregroundStyle(DS.Colors.primary)
             .tint(DS.Colors.accent)
             .background(DS.Colors.windowBg)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .openProSettings)) { _ in
+            #if PROFEATURES
+            if ProUpgradeManager.monetizationEnabled {
+                selection = .pro
+            }
+            #endif
         }
     }
 }

@@ -11,9 +11,17 @@ struct TranslationSettingsView: View {
         Form {
             if isLocked {
                 Section {
-                    Label("pro.upgrade_hint_translate", systemImage: "lock.fill")
-                        .font(DS.Font.caption)
-                        .foregroundStyle(DS.Colors.darkCoffee)
+                    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+                        Label("pro.upgrade_hint_translate", systemImage: "lock.fill")
+                            .font(DS.Font.caption)
+                            .foregroundStyle(DS.Colors.darkCoffee)
+
+                        Button("pro.open_upgrade") {
+                            NotificationCenter.default.post(name: .openProSettings, object: nil)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                    }
                 }
             }
 

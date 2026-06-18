@@ -34,6 +34,16 @@ struct AppContextTests {
         #expect(ctx.category == .code)
     }
 
+    @Test func codexIsCode() {
+        let ctx = AppContext.forTesting(appName: "Codex", bundleID: "com.openai.codex")
+        #expect(ctx.category == .code)
+    }
+
+    @Test func claudeIsChat() {
+        let ctx = AppContext.forTesting(appName: "Claude", bundleID: "com.anthropic.claude")
+        #expect(ctx.category == .chat)
+    }
+
     @Test func terminalIsTerminal() {
         let ctx = AppContext.forTesting(appName: "Terminal", bundleID: "com.apple.Terminal")
         #expect(ctx.category == .terminal)
@@ -92,5 +102,31 @@ struct AppContextTests {
     @Test func emailPriorityOverGeneric() {
         let ctx = AppContext.forTesting(appName: "Airmail", bundleID: "it.bloop.airmail2")
         #expect(ctx.category == .email)
+    }
+
+    @Test func fileURLIsNotSiteDomain() {
+        #expect(AppContext.siteKeyForTesting(from: "file") == nil)
+        #expect(AppContext.siteKeyForTesting(from: "file:///Users/kotatsu/test.html") == nil)
+    }
+
+    @Test func browserInternalURLIsNotSiteDomain() {
+        #expect(AppContext.siteKeyForTesting(from: "chrome://new-tab-page") == nil)
+    }
+
+    @Test func regularDomainBecomesSiteDomain() {
+        #expect(AppContext.siteKeyForTesting(from: "https://claude.ai/chat/abc") == "claude.ai")
+        #expect(AppContext.siteKeyForTesting(from: "github.com/openai/codex") == "github.com")
+    }
+
+    @Test func desktopAppsDoNotCaptureSiteDomain() {
+        #expect(AppContext.shouldCaptureSiteDomainForTesting(appName: "Claude", bundleID: "com.anthropic.claude") == false)
+        #expect(AppContext.shouldCaptureSiteDomainForTesting(appName: "Codex", bundleID: "com.openai.codex") == false)
+        #expect(AppContext.shouldCaptureSiteDomainForTesting(appName: "Slack", bundleID: "com.tinyspeck.slackmacgap") == false)
+    }
+
+    @Test func browsersCaptureSiteDomain() {
+        #expect(AppContext.shouldCaptureSiteDomainForTesting(appName: "Safari", bundleID: "com.apple.Safari") == true)
+        #expect(AppContext.shouldCaptureSiteDomainForTesting(appName: "Google Chrome", bundleID: "com.google.Chrome") == true)
+        #expect(AppContext.shouldCaptureSiteDomainForTesting(appName: "Comet", bundleID: "com.perplexity.Comet") == true)
     }
 }

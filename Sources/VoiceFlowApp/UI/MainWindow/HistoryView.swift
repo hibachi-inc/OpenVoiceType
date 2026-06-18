@@ -5,6 +5,9 @@ struct HistoryView: View {
     @State private var store = HistoryStore.shared
     @State private var selectedEntry: HistoryEntry?
     private let injector = ClipboardInjector()
+    #if PROFEATURES
+    @State private var upgradeManager = ProUpgradeManager.shared
+    #endif
 
     private var coordinator: RecordingCoordinator? {
         (NSApp.delegate as? AppDelegate)?.recordingCoordinator
@@ -19,6 +22,14 @@ struct HistoryView: View {
 
                 Divider()
             }
+
+            #if PROFEATURES
+            if !upgradeManager.isPro {
+                ProEntryBanner()
+                    .padding(.horizontal, DS.Spacing.md)
+                    .padding(.top, DS.Spacing.md)
+            }
+            #endif
 
             if store.entries.isEmpty {
                 ContentUnavailableView(
@@ -60,6 +71,40 @@ struct HistoryView: View {
         store.delete(entry)
     }
 }
+
+#if PROFEATURES
+private struct ProEntryBanner: View {
+    var body: some View {
+        HStack(spacing: DS.Spacing.md) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(DS.Colors.accent)
+                .frame(width: 36, height: 36)
+                .background(DS.Colors.accent.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("pro.upgrade_prompt")
+                    .font(DS.Font.bodyMedium)
+                Text("pro.iap_available_here")
+                    .font(DS.Font.caption)
+                    .foregroundStyle(DS.Colors.secondary)
+            }
+
+            Spacer()
+
+            Button("pro.open_upgrade") {
+                NotificationCenter.default.post(name: .openProSettings, object: nil)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+        }
+        .padding(DS.Spacing.md)
+        .background(DS.Colors.cardBg)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous))
+    }
+}
+#endif
 
 // MARK: - Recording Control
 

@@ -37,18 +37,22 @@ final class HistoryStore {
 
     private let maxEntries = 50
 
-    private init() {
+    init(inMemoryOnly: Bool = false) {
         let schema = Schema([HistoryEntry.self])
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let storeDir = appSupport.appendingPathComponent("OpenVoiceText", isDirectory: true)
-        try? FileManager.default.createDirectory(at: storeDir, withIntermediateDirectories: true)
-        let storeURL = storeDir.appendingPathComponent("history.store")
-        let diskConfig = ModelConfiguration(url: storeURL)
         let memoryConfig = ModelConfiguration(isStoredInMemoryOnly: true)
-        do {
-            container = try ModelContainer(for: schema, configurations: [diskConfig])
-        } catch {
+        if inMemoryOnly {
             container = try! ModelContainer(for: schema, configurations: [memoryConfig])
+        } else {
+            let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+            let storeDir = appSupport.appendingPathComponent("OpenVoiceText", isDirectory: true)
+            try? FileManager.default.createDirectory(at: storeDir, withIntermediateDirectories: true)
+            let storeURL = storeDir.appendingPathComponent("history.store")
+            let diskConfig = ModelConfiguration(url: storeURL)
+            do {
+                container = try ModelContainer(for: schema, configurations: [diskConfig])
+            } catch {
+                container = try! ModelContainer(for: schema, configurations: [memoryConfig])
+            }
         }
         context = ModelContext(container)
         reload()

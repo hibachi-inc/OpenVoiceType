@@ -5,8 +5,8 @@ import AVFoundation
 
 struct GeneralSettingsView: View {
     @State private var prefs = PreferencesStore.shared
-    @State private var micGranted = false
-    @State private var speechGranted = false
+    @State private var micStatus: AVAuthorizationStatus = .notDetermined
+    @State private var speechStatus: SFSpeechRecognizerAuthorizationStatus = .notDetermined
     @State private var accessibilityGranted = false
 
     private let locales: [(id: String, labelKey: LocalizedStringResource)] = [
@@ -125,7 +125,7 @@ struct GeneralSettingsView: View {
                 if prefs.refinementMode == .refine {
                     TextEditor(text: $prefs.defaultPrompt)
                         .font(DS.Font.body)
-                        .frame(height: 50)
+                        .frame(height: 110)
                         .scrollContentBackground(.hidden)
                         .background(DS.Colors.fieldBg)
                         .clipShape(RoundedRectangle(cornerRadius: 4))
@@ -133,6 +133,15 @@ struct GeneralSettingsView: View {
                             RoundedRectangle(cornerRadius: 4)
                                 .stroke(DS.Colors.secondary.opacity(0.3))
                         )
+
+                    HStack {
+                        Spacer()
+                        Button("refinement.default_prompt.reset", systemImage: "arrow.counterclockwise") {
+                            prefs.resetDefaultPrompt()
+                        }
+                        .disabled(!prefs.isDefaultPromptCustomized)
+                        .controlSize(.small)
+                    }
 
                     Text("refinement.default_prompt_desc")
                         .font(DS.Font.caption)
@@ -149,18 +158,20 @@ struct GeneralSettingsView: View {
             Section("general.permissions") {
                 PermissionRow(
                     label: String(localized: "general.permission.microphone"),
-                    granted: micGranted,
-                    settingsURL: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone"
+                    state: permissionState(for: micStatus),
+                    settingsURL: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone",
+                    onRequest: requestMicrophonePermission
                 )
                 PermissionRow(
                     label: String(localized: "general.permission.speech"),
-                    granted: speechGranted,
-                    settingsURL: "x-apple.systempreferences:com.apple.preference.security?Privacy_SpeechRecognition"
+                    state: permissionState(for: speechStatus),
+                    settingsURL: "x-apple.systempreferences:com.apple.preference.security?Privacy_SpeechRecognition",
+                    onRequest: requestSpeechPermission
                 )
                 #if DIRECT
                 PermissionRow(
                     label: String(localized: "general.permission.accessibility"),
-                    granted: accessibilityGranted,
+                    state: accessibilityGranted ? .granted : .needsSettings,
                     settingsURL: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility",
                     isAccessibility: true
                 )
@@ -182,11 +193,53 @@ struct GeneralSettingsView: View {
     }
 
     private func refreshPermissions() {
-        micGranted = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
-        speechGranted = SFSpeechRecognizer.authorizationStatus() == .authorized
+        micStatus = AVCaptureDevice.authorizationStatus(for: .audio)
+        speechStatus = SFSpeechRecognizer.authorizationStatus()
         #if DIRECT
         accessibilityGranted = AXIsProcessTrusted()
         #endif
+    }
+
+    private func permissionState(for status: AVAuthorizationStatus) -> PermissionActionState {
+        switch status {
+        case .authorized:
+            .granted
+        case .notDetermined:
+            .requestable
+        case .denied, .restricted:
+            .needsSettings
+        @unknown default:
+            .needsSettings
+        }
+    }
+
+    private func permissionState(for status: SFSpeechRecognizerAuthorizationStatus) -> PermissionActionState {
+        switch status {
+        case .authorized:
+            .granted
+        case .notDetermined:
+            .requestable
+        case .denied, .restricted:
+            .needsSettings
+        @unknown default:
+            .needsSettings
+        }
+    }
+
+    private func requestMicrophonePermission() {
+        Task {
+            _ = await AVCaptureDevice.requestAccess(for: .audio)
+            await MainActor.run { refreshPermissions() }
+        }
+    }
+
+    private func requestSpeechPermission() {
+        Task {
+            _ = await withCheckedContinuation { cont in
+                SFSpeechRecognizer.requestAuthorization { cont.resume(returning: $0) }
+            }
+            await MainActor.run { refreshPermissions() }
+        }
     }
 
     private func syncLaunchAtLogin() {
@@ -283,7 +336,75 @@ struct SpeechModelStatusView: View {
 }
 
 #if PROFEATURES
-struct AppPromptEditor: View {
+struct CategoryPromptEditor: View {
+    @State private var prefs = PreferencesStore.shared
+    @State private var selectedCategory: AppContext.Category = .code
+    @State private var promptText = ""
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+            Picker("refinement.type_prompt.select_type", selection: $selectedCategory) {
+                ForEach(AppContext.Category.allCases, id: \.rawValue) { category in
+                    Text(categoryDisplayName(category)).tag(category)
+                }
+            }
+            .pickerStyle(.menu)
+            .frame(maxWidth: 220)
+            .onChange(of: selectedCategory) {
+                promptText = prefs.appPrompts[categoryPromptKey(selectedCategory)] ?? ""
+            }
+            .onAppear {
+                promptText = prefs.appPrompts[categoryPromptKey(selectedCategory)] ?? ""
+            }
+
+            TextEditor(text: $promptText)
+                .font(DS.Font.body)
+                .frame(height: 60)
+                .scrollContentBackground(.hidden)
+                .background(DS.Colors.fieldBg)
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 4)
+                        .stroke(DS.Colors.secondary.opacity(0.3))
+                )
+                .onChange(of: promptText) {
+                    savePrompt(promptText, for: selectedCategory)
+                }
+
+            ForEach(configuredCategories, id: \.rawValue) { category in
+                if category != selectedCategory {
+                    PromptSummaryRow(
+                        title: categoryDisplayName(category),
+                        prompt: prefs.appPrompts[categoryPromptKey(category)] ?? ""
+                    ) {
+                        var prompts = prefs.appPrompts
+                        prompts.removeValue(forKey: categoryPromptKey(category))
+                        prefs.appPrompts = prompts
+                    }
+                }
+            }
+        }
+    }
+
+    private var configuredCategories: [AppContext.Category] {
+        AppContext.Category.allCases.filter { category in
+            !(prefs.appPrompts[categoryPromptKey(category)] ?? "").isEmpty
+        }
+    }
+
+    private func savePrompt(_ text: String, for category: AppContext.Category) {
+        var prompts = prefs.appPrompts
+        let key = categoryPromptKey(category)
+        if text.isEmpty {
+            prompts.removeValue(forKey: key)
+        } else {
+            prompts[key] = text
+        }
+        prefs.appPrompts = prompts
+    }
+}
+
+struct AppSpecificPromptEditor: View {
     @State private var prefs = PreferencesStore.shared
     @State private var store = HistoryStore.shared
     @State private var selectedApp = ""
@@ -294,7 +415,9 @@ struct AppPromptEditor: View {
     }
 
     private var configuredApps: [String] {
-        prefs.appPrompts.keys.sorted()
+        prefs.appPrompts.keys
+            .filter { category(fromPromptKey: $0) == nil }
+            .sorted()
     }
 
     var body: some View {
@@ -304,15 +427,13 @@ struct AppPromptEditor: View {
                 .foregroundStyle(DS.Colors.secondary)
         } else {
             VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-                HStack {
-                    Picker("refinement.app_prompt.select_app", selection: $selectedApp) {
-                        Text("refinement.app_prompt.select_app").tag("")
-                        ForEach(knownApps, id: \.self) { app in
-                            Text(app).tag(app)
-                        }
+                Picker("refinement.app_prompt.select_app", selection: $selectedApp) {
+                    Text("refinement.app_prompt.select_app").tag("")
+                    ForEach(knownApps, id: \.self) { app in
+                        Text(app).tag(app)
                     }
-                    .frame(maxWidth: 200)
                 }
+                .frame(maxWidth: 220)
                 .onChange(of: selectedApp) {
                     promptText = prefs.appPrompts[selectedApp] ?? ""
                 }
@@ -341,21 +462,10 @@ struct AppPromptEditor: View {
 
                 ForEach(configuredApps, id: \.self) { app in
                     if app != selectedApp {
-                        HStack {
-                            Text(app)
-                                .font(DS.Font.body)
-                            Spacer()
-                            Text(prefs.appPrompts[app] ?? "")
-                                .font(DS.Font.caption)
-                                .foregroundStyle(DS.Colors.secondary)
-                                .lineLimit(1)
-                                .frame(maxWidth: 200, alignment: .trailing)
-                            Button("refinement.app_prompt.delete") {
-                                var prompts = prefs.appPrompts
-                                prompts.removeValue(forKey: app)
-                                prefs.appPrompts = prompts
-                            }
-                            .controlSize(.small)
+                        PromptSummaryRow(title: app, prompt: prefs.appPrompts[app] ?? "") {
+                            var prompts = prefs.appPrompts
+                            prompts.removeValue(forKey: app)
+                            prefs.appPrompts = prompts
                         }
                     }
                 }
@@ -363,13 +473,58 @@ struct AppPromptEditor: View {
         }
     }
 }
+
+private struct PromptSummaryRow: View {
+    let title: String
+    let prompt: String
+    let onDelete: () -> Void
+
+    var body: some View {
+        HStack {
+            Text(title)
+                .font(DS.Font.body)
+            Spacer()
+            Text(prompt)
+                .font(DS.Font.caption)
+                .foregroundStyle(DS.Colors.secondary)
+                .lineLimit(1)
+                .frame(maxWidth: 200, alignment: .trailing)
+            Button("refinement.app_prompt.delete", action: onDelete)
+                .controlSize(.small)
+        }
+    }
+}
+
+private func categoryPromptKey(_ category: AppContext.Category) -> String {
+    "__category__:\(category.rawValue)"
+}
+
+private func category(fromPromptKey key: String) -> AppContext.Category? {
+    let prefix = "__category__:"
+    guard key.hasPrefix(prefix) else { return nil }
+    return AppContext.Category(rawValue: String(key.dropFirst(prefix.count)))
+}
+
+private func categoryDisplayName(_ category: AppContext.Category) -> String {
+    switch category {
+    case .chat: String(localized: "refinement.app_prompt.category.chat")
+    case .email: String(localized: "refinement.app_prompt.category.email")
+    case .code: String(localized: "refinement.app_prompt.category.code")
+    case .terminal: String(localized: "refinement.app_prompt.category.terminal")
+    case .notes: String(localized: "refinement.app_prompt.category.notes")
+    case .browser: String(localized: "refinement.app_prompt.category.browser")
+    case .generic: String(localized: "refinement.app_prompt.category.generic")
+    }
+}
+
 #endif
 
 struct PermissionRow: View {
     let label: String
-    let granted: Bool
+    let state: PermissionActionState
     let settingsURL: String
     var isAccessibility = false
+    var onRequest: (() -> Void)?
 
     private nonisolated func promptAccessibility() {
         let key = kAXTrustedCheckOptionPrompt.takeUnretainedValue()
@@ -379,26 +534,36 @@ struct PermissionRow: View {
 
     var body: some View {
         HStack {
-            Image(systemName: granted ? "checkmark.circle.fill" : "xmark.circle")
-                .foregroundStyle(granted ? .green : DS.Colors.error)
+            Image(systemName: state == .granted ? "checkmark.circle.fill" : "xmark.circle")
+                .foregroundStyle(state == .granted ? .green : DS.Colors.error)
                 .font(.system(size: 14))
             Text(label)
             Spacer()
-            if granted {
+            if state == .granted {
                 Text("general.permission.granted")
                     .font(DS.Font.caption)
                     .foregroundStyle(DS.Colors.secondary)
             } else {
-                Button("general.permission.open_settings") {
-                    if isAccessibility {
-                        promptAccessibility()
-                    } else if let url = URL(string: settingsURL) {
-                        NSWorkspace.shared.open(url)
+                if state == .requestable, let onRequest {
+                    Button("general.permission.request_access", action: onRequest)
+                        .controlSize(.small)
+                } else {
+                    Button("general.permission.open_settings") {
+                        if isAccessibility {
+                            promptAccessibility()
+                        } else if let url = URL(string: settingsURL) {
+                            NSWorkspace.shared.open(url)
+                        }
                     }
+                    .controlSize(.small)
                 }
-                .controlSize(.small)
             }
         }
     }
 }
 
+enum PermissionActionState {
+    case granted
+    case requestable
+    case needsSettings
+}

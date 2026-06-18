@@ -40,6 +40,10 @@ final class PreferencesStore {
         didSet { defaults.set(defaultPrompt, forKey: "defaultPrompt") }
     }
 
+    var isDefaultPromptCustomized: Bool {
+        defaultPrompt != Self.localizedDefaultPrompt
+    }
+
     #if PROFEATURES
     var appPrompts: [String: String] {
         didSet { defaults.set(appPrompts, forKey: "appPrompts") }
@@ -80,8 +84,16 @@ final class PreferencesStore {
         } else {
             appLanguage = "system"
         }
-        defaultPrompt = defaults.string(forKey: "defaultPrompt")
-            ?? Bundle.main.localizedString(forKey: "refinement.default_prompt.initial", value: "", table: nil)
+        if let storedDefaultPrompt = defaults.string(forKey: "defaultPrompt") {
+            if Self.shouldMigrateDefaultPrompt(storedDefaultPrompt) {
+                defaultPrompt = Self.localizedDefaultPrompt
+                defaults.set(Self.localizedDefaultPrompt, forKey: "defaultPrompt")
+            } else {
+                defaultPrompt = storedDefaultPrompt
+            }
+        } else {
+            defaultPrompt = Self.localizedDefaultPrompt
+        }
         #if PROFEATURES
         appPrompts = (defaults.dictionary(forKey: "appPrompts") as? [String: String]) ?? [:]
         #endif
@@ -95,6 +107,30 @@ final class PreferencesStore {
         #if PROFEATURES
         translationLanguages = Self.loadTranslationLanguages(from: defaults)
         #endif
+    }
+
+    func resetDefaultPrompt() {
+        defaultPrompt = Self.localizedDefaultPrompt
+    }
+
+    private static var localizedDefaultPrompt: String {
+        Bundle.main.localizedString(
+            forKey: "refinement.default_prompt.initial",
+            value: "",
+            table: nil
+        )
+    }
+
+    private static func shouldMigrateDefaultPrompt(_ prompt: String) -> Bool {
+        let legacyDefaults = [
+            "音声入力のため、誤認識と思われる箇所は意味を汲み取って正しい言葉に修正してください。修正不要な場合はそのまま出力してください。",
+            "音声入力の文字起こしを、意味を変えずに読みやすい文章へ整えてください。フィラー、言い直し、重複、話し言葉の揺れを削除し、句読点と必要な改行を自然に補ってください。数字・金額・日付・単位は文脈に合う表記へ整えてください。日常文では「100,000円」は「10万円」、「10,000」は「1万」のように読みやすくし、正確な桁数が重要な場合は数字表記を保ってください。誤認識と思われる語だけ文脈から修正し、固有名詞・専門用語・コード・URLは勝手に変えないでください。説明は不要で、整形後のテキストのみ返してください。",
+            "以下の音声文字起こしを、意味を変えずに読みやすい文章へ整えて。フィラー、言い直し、重複を削除し、句読点を補い、数字・金額・日付・単位を文脈に合う表記に整えて。",
+            "This is voice input. If there seem to be transcription errors, please understand the meaning and correct them. If no corrections are needed, please output it as is.",
+            "Clean up this voice-input transcript into readable text without changing the meaning. Remove filler words, restarts, duplicated phrases, and spoken-language roughness. Add natural punctuation and line breaks where helpful. Format numbers, money, dates, and units in the most readable form for the context: for everyday prose, prefer compact forms like \"100K yen\" or \"10,000\" as appropriate; when exact digits matter, keep the numeric notation. Correct only likely transcription errors from context, and do not rewrite proper nouns, technical terms, code, or URLs. Return only the refined text with no explanation.",
+            "Clean up the following voice transcript into readable text without changing the meaning. Remove filler words, restarts, and repetition. Add punctuation, and format numbers, money, dates, and units appropriately for the context.",
+        ]
+        return legacyDefaults.contains(prompt)
     }
 
     #if PROFEATURES

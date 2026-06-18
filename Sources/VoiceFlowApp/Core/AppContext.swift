@@ -5,7 +5,7 @@ import os
 private let axLogger = Logger(subsystem: "com.hibachi.voicelatte", category: "AppContext")
 
 struct AppContext: Sendable {
-    enum Category: String, Sendable {
+    enum Category: String, CaseIterable, Sendable {
         case chat, email, code, terminal, notes, browser, generic
     }
 
@@ -33,7 +33,7 @@ struct AppContext: Sendable {
         guard let app = NSWorkspace.shared.frontmostApplication,
               let appName = app.localizedName else { return nil }
         let category = classify(appName: appName, bundleID: app.bundleIdentifier)
-        let domain = siteKey(pid: app.processIdentifier)
+        let domain = shouldCaptureSiteDomain(for: category) ? siteKey(pid: app.processIdentifier) : nil
         let cursor = cursorContext(pid: app.processIdentifier)
         return AppContext(
             appName: appName,
@@ -54,6 +54,10 @@ struct AppContext: Sendable {
             cursorBefore: nil,
             cursorAfter: nil
         )
+    }
+
+    static func shouldCaptureSiteDomainForTesting(appName: String, bundleID: String?) -> Bool {
+        shouldCaptureSiteDomain(for: classify(appName: appName, bundleID: bundleID))
     }
 
     // MARK: - Cursor context via AXUIElement
@@ -237,9 +241,20 @@ struct AppContext: Sendable {
     }
 
     private static func siteKeyFrom(_ urlString: String) -> String? {
-        let normalized = urlString.hasPrefix("http") ? urlString : "https://\(urlString)"
+        let trimmed = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        if let scheme = URLComponents(string: trimmed)?.scheme,
+           scheme != "http", scheme != "https" {
+            return nil
+        }
+
+        let normalized = trimmed.hasPrefix("http://") || trimmed.hasPrefix("https://")
+            ? trimmed
+            : "https://\(trimmed)"
         guard let comps = URLComponents(string: normalized), let host = comps.host else { return nil }
         let domain = host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
+        guard domain == "localhost" || domain.contains(".") else { return nil }
         // Include first path segment for multi-service hosts (docs.google.com/spreadsheets vs /document)
         if multiServiceHosts.contains(domain),
            let path = comps.path.split(separator: "/").first {
@@ -248,16 +263,24 @@ struct AppContext: Sendable {
         return domain
     }
 
+    static func siteKeyForTesting(from urlString: String) -> String? {
+        siteKeyFrom(urlString)
+    }
+
     // MARK: - App classification
+
+    private static func shouldCaptureSiteDomain(for category: Category) -> Bool {
+        category == .browser
+    }
 
     private static func classify(appName: String, bundleID: String?) -> Category {
         let haystack = "\(bundleID ?? "") \(appName)".lowercased()
         let rules: [(Category, [String])] = [
             (.email, ["mail", "outlook", "superhuman", "spark", "airmail"]),
             (.chat, ["slack", "discord", "teams", "wechat", "weixin", "telegram",
-                     "whatsapp", "messages", "line"]),
+                     "whatsapp", "messages", "line", "claude", "anthropic"]),
             (.code, ["xcode", "cursor", "visualstudiocode", "vscode", "jetbrains",
-                     "intellij", "pycharm", "webstorm", "sublime", "zed", "nova"]),
+                     "intellij", "pycharm", "webstorm", "sublime", "zed", "nova", "codex"]),
             (.terminal, ["terminal", "iterm", "warp", "ghostty", "kitty", "alacritty"]),
             (.notes, ["notes", "notion", "obsidian", "bear", "evernote", "onenote", "craft"]),
             (.browser, ["safari", "chrome", "firefox", "edge", "arc", "brave", "orion", "comet"]),

@@ -290,6 +290,8 @@ final class RecordingCoordinator {
                       let customPrompt = prefs.appPrompts[appName], !customPrompt.isEmpty {
                 // Fallback: match by app name when no domain-specific prompt
                 refinerContext[RefinerContextKey.customPrompt] = customPrompt
+            } else if let customPrompt = prefs.appPrompts[Self.categoryPromptKey(effectiveCategory)], !customPrompt.isEmpty {
+                refinerContext[RefinerContextKey.customPrompt] = customPrompt
             } else if !prefs.defaultPrompt.isEmpty {
                 refinerContext[RefinerContextKey.customPrompt] = prefs.defaultPrompt
             }
@@ -327,7 +329,7 @@ final class RecordingCoordinator {
             canDirectPaste = false
             #endif
 
-            let cleaned = Self.stripWrappingQuotes(refined)
+            let cleaned = Self.stripModelWrappers(refined)
             let injector = canDirectPaste ? directInjector : clipboardInjector
             injector.inject(cleaned)
             session.transition(.refinementDone)
@@ -420,26 +422,55 @@ final class RecordingCoordinator {
 
     // MARK: - Text Cleanup
 
-    /// AI整形が付与する先頭・末尾の引用符を除去する
-    private static func stripWrappingQuotes(_ text: String) -> String {
-        var s = text
-        // 「...」
-        if s.hasPrefix("「") && s.hasSuffix("」") {
-            s = String(s.dropFirst().dropLast())
-        }
-        // 『...』
-        else if s.hasPrefix("『") && s.hasSuffix("』") {
-            s = String(s.dropFirst().dropLast())
-        }
-        // "..."（全角）
-        else if s.hasPrefix("\u{201C}") && s.hasSuffix("\u{201D}") {
-            s = String(s.dropFirst().dropLast())
-        }
-        // "..."（半角）
-        else if s.hasPrefix("\"") && s.hasSuffix("\"") && s.count > 1 {
-            s = String(s.dropFirst().dropLast())
+    /// AI整形が付与する先頭・末尾の引用符やプロンプト用タグを除去する
+    private static func stripModelWrappers(_ text: String) -> String {
+        var s = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        for _ in 0..<2 {
+            s = stripWrappingQuotes(s)
+            s = stripWrappingTag(s)
         }
         return s
+    }
+
+    private static func stripWrappingQuotes(_ text: String) -> String {
+        let pairs: [(Character, Character)] = [
+            ("「", "」"),
+            ("『", "』"),
+            ("\u{201C}", "\u{201D}"),
+            ("\"", "\""),
+        ]
+        guard let first = text.first, let last = text.last,
+              text.count > 1,
+              pairs.contains(where: { $0.0 == first && $0.1 == last }) else {
+            return text
+        }
+        return String(text.dropFirst().dropLast()).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    static func categoryPromptKey(_ category: AppContext.Category) -> String {
+        "__category__:\(category.rawValue)"
+    }
+
+    private static func stripWrappingTag(_ text: String) -> String {
+        let tagNames = #"input|output|text|result|response"#
+        let pattern = #"(?is)^\s*<\s*(\#(tagNames))\s*>\s*(.*?)\s*</\s*\1\s*>\s*$"#
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return text }
+        let range = NSRange(text.startIndex..., in: text)
+        if let match = regex.firstMatch(in: text, range: range),
+           match.numberOfRanges == 3,
+           let contentRange = Range(match.range(at: 2), in: text) {
+            return String(text[contentRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        let openingPattern = #"(?is)^\s*<\s*(\#(tagNames))\s*>\s*(.+)$"#
+        if let openingRegex = try? NSRegularExpression(pattern: openingPattern),
+           let match = openingRegex.firstMatch(in: text, range: range),
+           match.numberOfRanges == 3,
+           let contentRange = Range(match.range(at: 2), in: text) {
+            return String(text[contentRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        return text
     }
 
     // MARK: - System Audio Mute
