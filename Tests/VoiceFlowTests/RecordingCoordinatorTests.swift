@@ -161,6 +161,20 @@ struct RecordingCoordinatorTests {
         #expect(!coordinator.isRecording)
     }
 
+    @Test func japaneseSpacingIsNormalizedBeforeInjection() async {
+        let (coordinator, stt, refiner, _, injector, _) = makeCoordinator()
+        stt.transcriptToReturn = "第 3章を 進めてください ？"
+        refiner.refinedToReturn = stt.transcriptToReturn!
+
+        coordinator.toggle()
+        coordinator.toggle()
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #expect(injector.injectedText == "第3章を進めてください？")
+        #expect(RecordingCoordinator.normalizeText("Hello world", category: "generic") == "Hello world")
+        #expect(RecordingCoordinator.normalizeText("git commit -m \"hello world\"", category: "code") == "git commit -m \"hello world\"")
+    }
+
     @Test func wrappedInputTagFromRefinerIsStrippedBeforeInjection() async {
         let (coordinator, stt, refiner, _, injector, _) = makeCoordinator()
         stt.transcriptToReturn = "うんかなりいい感じ"

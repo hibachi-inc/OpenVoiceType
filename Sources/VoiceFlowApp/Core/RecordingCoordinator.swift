@@ -329,7 +329,8 @@ final class RecordingCoordinator {
             canDirectPaste = false
             #endif
 
-            let cleaned = Self.stripModelWrappers(refined)
+            let category = refinerContext[RefinerContextKey.category] ?? "generic"
+            let cleaned = Self.normalizeText(Self.stripModelWrappers(refined), category: category)
             let injector = canDirectPaste ? directInjector : clipboardInjector
             injector.inject(cleaned)
             session.transition(.refinementDone)
@@ -430,6 +431,25 @@ final class RecordingCoordinator {
             s = stripWrappingTag(s)
         }
         return s
+    }
+
+    static func normalizeText(_ text: String, category: String) -> String {
+        guard category != "code", category != "terminal" else { return text }
+
+        let patterns = [
+            #"(?<=[ぁ-んァ-ヶ一-龯々ー])[ \t]+(?=[ぁ-んァ-ヶ一-龯々ー])"#,
+            #"(?<=[ぁ-んァ-ヶ一-龯々ー])[ \t]+(?=[0-9０-９A-Za-z])"#,
+            #"(?<=[0-9０-９A-Za-z])[ \t]+(?=[ぁ-んァ-ヶ一-龯々ー])"#,
+            #"[ \t]+(?=[、。，．！？!?」』）］】])"#,
+            #"(?<=[「『（［【])[ \t]+"#,
+        ]
+
+        var result = text
+        for pattern in patterns {
+            result = result.replacingOccurrences(of: pattern, with: "", options: .regularExpression)
+        }
+        result = result.replacingOccurrences(of: #"[ \t]{2,}"#, with: " ", options: .regularExpression)
+        return result.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private static func stripWrappingQuotes(_ text: String) -> String {

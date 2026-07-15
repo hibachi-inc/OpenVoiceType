@@ -314,7 +314,7 @@ final class STTService: NSObject, STTServiceProtocol {
                                 if unsafeSelf.confirmedText.isEmpty {
                                     unsafeSelf.confirmedText = text
                                 } else {
-                                    unsafeSelf.confirmedText += " " + text
+                                    unsafeSelf.confirmedText = Self.joinTranscriptParts(unsafeSelf.confirmedText, text)
                                 }
                                 unsafeSelf.provisionalText = ""
                             } else {
@@ -483,7 +483,29 @@ final class STTService: NSObject, STTServiceProtocol {
     private var lockedFullTranscript: String {
         if confirmedText.isEmpty { return provisionalText }
         if provisionalText.isEmpty { return confirmedText }
-        return confirmedText + " " + provisionalText
+        return Self.joinTranscriptParts(confirmedText, provisionalText)
+    }
+
+    private static func joinTranscriptParts(_ left: String, _ right: String) -> String {
+        guard !left.isEmpty else { return right }
+        guard !right.isEmpty else { return left }
+        guard let last = left.last, let first = right.first else { return left + right }
+
+        if last.isWhitespace || first.isWhitespace || isJapanese(last) || isJapanese(first) {
+            return left + right
+        }
+        return left + " " + right
+    }
+
+    private static func isJapanese(_ character: Character) -> Bool {
+        character.unicodeScalars.contains { scalar in
+            switch scalar.value {
+            case 0x3040...0x30FF, 0x3400...0x4DBF, 0x4E00...0x9FFF:
+                true
+            default:
+                false
+            }
+        }
     }
 
     private func processAudioLevel(buffer: AVAudioPCMBuffer) {
